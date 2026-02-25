@@ -1,6 +1,12 @@
 denys-personal-source.space, www.denys-personal-source.space {
     root * /usr/share/caddy
     file_server
+
+    # Добавляем доступ к Swagger
+    reverse_proxy /docs backend:8000
+    reverse_proxy /openapi.json backend:8000
+
+    # Твои старые правила
     reverse_proxy /user/* backend:8000
     reverse_proxy /debt/* backend:8000
     reverse_proxy /users backend:8000
