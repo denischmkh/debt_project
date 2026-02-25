@@ -6,290 +6,123 @@
     <title>Debt Manager</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* --- Telegram Dark Blue Theme --- */
+        /* --- CSS Styles --- */
         :root {
-            --bg-color: #17212b;
-            --card-bg: #232e3c;
-            --header-bg: #0e1621;
-            --text-color: #ffffff;
-            --text-secondary: #8b9198;
-            --accent-color: #5288c1;
-            --danger-color: #e4a83b;
-            --success-color: #4fae4e;
-            --border-color: #0e1621;
+            --bg-color: #17212b; --card-bg: #232e3c; --header-bg: #0e1621;
+            --text-color: #ffffff; --text-secondary: #8b9198; --accent-color: #5288c1;
+            --danger-color: #e4a83b; --success-color: #4fae4e; --border-color: #0e1621;
             --input-bg: #242f3d;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-color); color: var(--text-color); margin: 0;
+            min-height: 100vh; display: flex; flex-direction: column;
         }
-
-        /* --- Header --- */
         .header {
-            position: sticky;
-            top: 0;
-            background-color: var(--header-bg);
-            padding: 16px;
-            z-index: 100;
-            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; background-color: var(--header-bg);
+            padding: 16px; z-index: 100; border-bottom: 1px solid var(--border-color);
         }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .user-info {
-            font-size: 14px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: color 0.2s;
-        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .user-info { font-size: 14px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s; }
         .user-info:hover { color: var(--accent-color); }
-
-        /* Total Container */
         .header-stats {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            background-color: var(--card-bg);
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            gap: 10px;
+            display: flex; flex-direction: column; align-items: stretch;
+            background-color: var(--card-bg); padding: 12px 16px; border-radius: 12px;
+            margin-bottom: 12px; gap: 10px;
         }
-
-        /* --- Currency Selector --- */
         .currency-selector-wrapper { width: 100%; }
-
         .currency-select {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--input-bg);
-            border: none;
-            border-radius: 10px;
-            color: var(--text-color);
-            font-size: 16px;
-            appearance: none;
+            width: 100%; padding: 14px; background-color: var(--input-bg); border: none;
+            border-radius: 10px; color: var(--text-color); font-size: 16px; appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b9198' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 16px;
-            cursor: pointer;
-            outline: none;
+            background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+            cursor: pointer; outline: none;
         }
-
-        .total-display {
-            font-weight: 600;
-            font-size: 18px;
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .total-label {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 2px;
-        }
-
-        /* --- Tabs --- */
-        .tabs-container {
-            display: flex;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 4px;
-        }
-
+        .total-display { font-weight: 600; font-size: 18px; color: var(--text-color); display: flex; flex-direction: column; gap: 4px; }
+        .total-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 2px; }
+        .tabs-container { display: flex; background-color: var(--card-bg); border-radius: 12px; padding: 4px; }
         .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
+            flex: 1; padding: 10px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 14px; font-weight: 500;
+            border-radius: 8px; cursor: pointer; transition: background 0.2s;
         }
-
         .tab-btn.active { background-color: var(--bg-color); color: var(--text-color); }
         .tab-btn.active.danger { color: var(--danger-color); }
         .tab-btn.active.success { color: var(--success-color); }
-
-        /* --- Content --- */
-        .main-content {
-            flex: 1;
-            padding: 16px;
-            padding-bottom: 100px;
-        }
-
+        .main-content { flex: 1; padding: 16px; padding-bottom: 100px; }
         .list-container { display: flex; flex-direction: column; gap: 12px; }
-
-        /* --- Debt Card --- */
         .debt-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            border-left: 4px solid transparent;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
+            background-color: var(--card-bg); border-radius: 12px; padding: 16px;
+            border-left: 4px solid transparent; display: flex; flex-direction: column;
+            gap: 8px; cursor: pointer; transition: background-color 0.2s;
         }
         .debt-card:active { background-color: #2a3a4d; }
-
         .debt-card.mode-owe { border-left-color: var(--danger-color); }
         .debt-card.mode-owed { border-left-color: var(--success-color); }
-
         .card-row { display: flex; justify-content: space-between; align-items: center; }
         .amount-block { font-size: 18px; font-weight: 600; color: var(--text-color); }
-
         .currency-badge {
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background-color: rgba(255,255,255,0.1);
-            margin-left: 6px;
-            vertical-align: middle;
-            color: var(--text-secondary);
+            font-size: 12px; padding: 2px 6px; border-radius: 4px;
+            background-color: rgba(255,255,255,0.1); margin-left: 6px;
+            vertical-align: middle; color: var(--text-secondary);
         }
-
         .counterparty-name { font-size: 13px; color: var(--text-secondary); margin-bottom: 2px; }
-
         .clickable-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-color);
-            cursor: pointer;
-            display: inline-block;
-            padding: 2px 0;
+            font-size: 16px; font-weight: 600; color: var(--text-color);
+            cursor: pointer; display: inline-block; padding: 2px 0;
             border-bottom: 1px dashed rgba(255,255,255,0.3);
         }
-
         .description-text {
-            font-size: 14px;
-            color: var(--text-secondary);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 8px;
-            margin-top: 4px;
+            font-size: 14px; color: var(--text-secondary);
+            border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; margin-top: 4px;
         }
-
         .date-text { font-size: 12px; color: var(--text-secondary); opacity: 0.7; }
-
-        /* --- FAB --- */
         .fab {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            font-size: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 50;
-            transition: transform 0.1s, opacity 0.1s;
+            position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px;
+            border-radius: 50%; background-color: var(--accent-color); color: white;
+            border: none; font-size: 28px; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 50; transition: transform 0.1s, opacity 0.1s;
         }
         .fab:active { transform: scale(0.9); opacity: 0.9; }
 
         /* --- Modals --- */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 200;
-            display: none;
-            justify-content: center;
-            align-items: flex-end;
-            padding: 0;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 200; display: none;
+            justify-content: center; align-items: flex-end; padding: 0;
         }
         .modal-overlay.active { display: flex; }
-
         .modal-sheet {
-            background-color: var(--card-bg);
-            width: 100%;
-            max-width: 500px;
-            border-radius: 16px 16px 0 0;
-            padding: 24px;
-            max-height: 85vh;
-            overflow-y: auto;
+            background-color: var(--card-bg); width: 100%; max-width: 500px;
+            border-radius: 16px 16px 0 0; padding: 24px; max-height: 85vh; overflow-y: auto;
         }
-
         .modal-title { margin: 0 0 20px 0; font-size: 20px; text-align: center; font-weight: 600; }
-
         input, select, textarea {
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 16px;
-            background-color: var(--input-bg);
-            border: none;
-            border-radius: 10px;
-            color: var(--text-color);
-            font-size: 16px;
-            outline: none;
+            width: 100%; padding: 14px; margin-bottom: 16px; background-color: var(--input-bg);
+            border: none; border-radius: 10px; color: var(--text-color); font-size: 16px; outline: none;
         }
-
         select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b9198' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 16px;
+            background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
             cursor: pointer;
         }
-
         input::placeholder, textarea::placeholder { color: var(--text-secondary); }
         textarea { resize: none; }
-
         label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; margin-top: 4px; }
-
         .btn-action {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: opacity 0.1s;
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.1s;
         }
         .btn-action:active { opacity: 0.8; }
         .btn-primary { background-color: var(--accent-color); color: white; }
         .btn-secondary { background-color: rgba(255,255,255,0.1); color: var(--text-color); }
-
         .back-btn {
-            background: none;
-            border: none;
-            color: var(--accent-color);
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            background: none; border: none; color: var(--accent-color); font-size: 16px;
+            cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;
         }
-
         .hidden { display: none !important; }
         .empty-text { text-align: center; color: var(--text-secondary); margin-top: 40px; font-size: 15px; }
     </style>
@@ -333,6 +166,17 @@
     </main>
 
     <button class="fab" onclick="openCreateModal()">+</button>
+
+    <!-- Modal: Registration (NEW) -->
+    <div id="register-modal" class="modal-overlay">
+        <div class="modal-sheet">
+            <h2 class="modal-title">Регистрация</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">Добро пожаловать! Введите ваше имя для начала работы.</p>
+            <label>Ваше имя</label>
+            <input type="text" id="register-name-input" placeholder="Как вас зовут?">
+            <button class="btn-action btn-primary" onclick="submitRegistration()">Сохранить</button>
+        </div>
+    </div>
 
     <!-- Modal: Change Name -->
     <div id="name-modal" class="modal-overlay">
@@ -397,13 +241,11 @@
         let currentView = 'main';
         let selectedUserId = null;
         let selectedCurrency = 'all';
-
-        // Currency Rates State
-        // Format: {"USD": 1.0, "UAH": 0.023, "EUR": 1.17} (Prices in USD)
         let currencyRates = {};
 
         // --- Init ---
         window.onload = async () => {
+            // Init Telegram WebApp
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
@@ -413,35 +255,28 @@
                 }
             }
 
-            if (!tgId) {
-                console.warn("No TG context, using test ID");
-                tgId = prompt("Enter Test ID:", 123);
-            }
+            await fetchCurrencyRates();
 
-            await fetchCurrencyRates(); // Load rates from backend
-            await checkUser();
+            // Если tgId определен (запуск в Telegram) - проверяем юзера
+            if (tgId) {
+                await checkUser();
+            } else {
+                // Если запускаем локально без Telegram, показываем окно регистрации (для теста)
+                showRegisterModal();
+            }
         };
 
-        // --- Currency Logic (Backend Integration) ---
+        // --- Currency Logic ---
         async function fetchCurrencyRates() {
             try {
-                // Используем относительный путь, Caddy сам перенаправит на бэкенд
                 const resp = await fetch('/currency');
-                if (resp.ok) {
-                    currencyRates = await resp.json();
-                    console.log("Fetched rates:", currencyRates);
-                } else {
-                    console.error("Failed to fetch rates");
-                }
-            } catch (e) {
-                console.error("Error fetching rates", e);
-            }
+                if (resp.ok) currencyRates = await resp.json();
+            } catch (e) { console.error("Error fetching rates", e); }
         }
 
         function getRate(fromCurr, toCurr) {
             if (fromCurr === toCurr) return 1;
             if (!currencyRates[fromCurr] || !currencyRates[toCurr]) return null;
-            // Formula: Amount * (RateFrom / RateTo)
             return currencyRates[fromCurr] / currencyRates[toCurr];
         }
 
@@ -453,26 +288,49 @@
                     const user = await resp.json();
                     initApp(user);
                 } else {
-                    showRegisterPrompt();
+                    // Если 404 - показываем модальное окно регистрации
+                    showRegisterModal();
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
         }
 
-        function showRegisterPrompt() {
-            const name = prompt("Введите ваше имя для регистрации:");
-            if (name) registerUser(name);
+        function showRegisterModal() {
+            document.getElementById('register-modal').classList.add('active');
         }
 
-        async function registerUser(name) {
-            const resp = await fetch('/user/create', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegram_id: Number(tgId), name })
-            });
-            if (resp.ok) {
-                const user = await resp.json();
-                initApp(user);
-            } else { alert("Ошибка регистрации"); }
+        async function submitRegistration() {
+            const nameInput = document.getElementById('register-name-input');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                nameInput.style.border = "1px solid red";
+                return;
+            }
+
+            try {
+                const resp = await fetch('/user/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ telegram_id: Number(tgId), name })
+                });
+
+                if (resp.ok) {
+                    const user = await resp.json();
+                    document.getElementById('register-modal').classList.remove('active');
+                    initApp(user);
+                } else {
+                    // Используем alert только для критических ошибок, лучше заменить на WebApp.showAlert если доступно
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        window.Telegram.WebApp.showAlert("Ошибка регистрации");
+                    } else {
+                        alert("Ошибка регистрации");
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
         }
 
         async function initApp(user) {
@@ -502,11 +360,8 @@
 
         // --- WebSockets ---
         function connectWS() {
-            // Определяем протокол ws или wss автоматически на основе текущего протокола страницы
             const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-            // Подключаемся к ws://domain.com/ws/{id}
             ws = new WebSocket(`${proto}://${location.host}/ws/${tgId}`);
-
             ws.onmessage = (e) => {
                 allDebts = JSON.parse(e.data);
                 renderCurrentView();
@@ -516,9 +371,7 @@
         // --- Logic: Totals & Conversion ---
         function calculateTotals(debts) {
             const totals = {};
-            debts.forEach(d => {
-                totals[d.currency] = (totals[d.currency] || 0) + d.amount;
-            });
+            debts.forEach(d => { totals[d.currency] = (totals[d.currency] || 0) + d.amount; });
             return totals;
         }
 
@@ -543,18 +396,12 @@
                     totalSum += sum;
                 } else {
                     const rate = getRate(curr, targetCurr);
-                    if (rate) {
-                        totalSum += sum * rate;
-                    } else {
-                        conversionFailed = true;
-                    }
+                    if (rate) totalSum += sum * rate;
+                    else conversionFailed = true;
                 }
             });
 
-            if (conversionFailed) {
-                return `<div class="total-display">${totalSum.toFixed(2)} ${targetCurr} <span style="font-size:12px; color:var(--text-secondary); display:block;">(нет курса)</span></div>`;
-            }
-
+            if (conversionFailed) return `<div class="total-display">${totalSum.toFixed(2)} ${targetCurr} <span style="font-size:12px; color:var(--text-secondary); display:block;">(нет курса)</span></div>`;
             return `<div class="total-display">${totalSum.toFixed(2)} ${targetCurr}</div>`;
         }
 
@@ -571,20 +418,16 @@
         // --- View: Main ---
         function renderMainList() {
             currentView = 'main';
-
             document.getElementById('main-tabs').classList.remove('hidden');
             document.getElementById('back-btn').classList.add('hidden');
             document.getElementById('header-title').innerText = 'DebtApp';
             document.getElementById('current-user-info').classList.remove('hidden');
 
             let filtered = allDebts.filter(d => d.is_paid === false);
-            if (activeTab === 'owe') {
-                filtered = filtered.filter(d => d.debtor_id == tgId);
-            } else {
-                filtered = filtered.filter(d => d.creditor_id == tgId);
-            }
-            filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            if (activeTab === 'owe') filtered = filtered.filter(d => d.debtor_id == tgId);
+            else filtered = filtered.filter(d => d.creditor_id == tgId);
 
+            filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             document.getElementById('total-display').innerHTML = renderTotalsHtml(filtered);
 
             const container = document.getElementById('list-container');
@@ -602,59 +445,36 @@
 
         function createCard(debt, isMainView) {
             const div = document.createElement('div');
-
-            let modeClass = '';
-            let label = '';
-            let otherUser = null;
+            let modeClass = '', label = '', otherUser = null;
 
             if (isMainView) {
-                if (activeTab === 'owe') {
-                    modeClass = 'mode-owe';
-                    otherUser = debt.creditor;
-                    label = 'Кредитор';
-                } else {
-                    modeClass = 'mode-owed';
-                    otherUser = debt.debtor;
-                    label = 'Должник';
-                }
+                if (activeTab === 'owe') { modeClass = 'mode-owe'; otherUser = debt.creditor; label = 'Кредитор'; }
+                else { modeClass = 'mode-owed'; otherUser = debt.debtor; label = 'Должник'; }
             } else {
-                if (debt.debtor_id == tgId) {
-                    modeClass = 'mode-owe';
-                    label = 'Я должен';
-                } else {
-                    modeClass = 'mode-owed';
-                    label = 'Мне должны';
-                }
+                if (debt.debtor_id == tgId) { modeClass = 'mode-owe'; label = 'Я должен'; }
+                else { modeClass = 'mode-owed'; label = 'Мне должны'; }
                 otherUser = debt.creditor.telegram_id == tgId ? debt.debtor : debt.creditor;
             }
 
             const dateStr = new Date(debt.created_at).toLocaleDateString('ru-RU');
-
             div.className = `debt-card ${modeClass}`;
             div.onclick = () => openEditModal(debt.id);
 
             div.innerHTML = `
                 <div class="card-row">
-                    <div class="amount-block">
-                        ${debt.amount} <span class="currency-badge">${debt.currency}</span>
-                    </div>
+                    <div class="amount-block">${debt.amount} <span class="currency-badge">${debt.currency}</span></div>
                     <div class="date-text">${dateStr}</div>
                 </div>
                 <div>
-                    <div class="counterparty-name">
-                        ${label}: <b class="clickable-name" onclick="event.stopPropagation(); openUserDetail(${otherUser.telegram_id})">${otherUser.name}</b>
-                    </div>
+                    <div class="counterparty-name">${label}: <b class="clickable-name" onclick="event.stopPropagation(); openUserDetail(${otherUser.telegram_id})">${otherUser.name}</b></div>
                 </div>
-                <div class="description-text">${debt.description || 'Без описания'}</div>
-            `;
+                <div class="description-text">${debt.description || 'Без описания'}</div>`;
             return div;
         }
 
         function switchTab(tabName) {
             activeTab = tabName;
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabName);
-            });
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
             renderMainList();
         }
 
@@ -673,31 +493,19 @@
             const user = usersCache.find(u => u.telegram_id == userId);
             document.getElementById('header-title').innerText = user ? user.name : 'Детали';
 
-            const userDebts = allDebts.filter(d =>
-                !d.is_paid &&
-                ((d.debtor_id == tgId && d.creditor_id == userId) || (d.creditor_id == tgId && d.debtor_id == userId))
-            );
-
+            const userDebts = allDebts.filter(d => !d.is_paid && ((d.debtor_id == tgId && d.creditor_id == userId) || (d.creditor_id == tgId && d.debtor_id == userId)));
             const iOwe = userDebts.filter(d => d.debtor_id == tgId);
             const theyOwe = userDebts.filter(d => d.creditor_id == tgId);
 
             const statsContainer = document.getElementById('total-display');
             let statsHtml = '';
-
-            if (iOwe.length > 0) {
-                statsHtml += `<div class="total-label">Я должен:</div>` + renderTotalsHtml(iOwe);
-            }
-            if (theyOwe.length > 0) {
-                statsHtml += `<div class="total-label" style="margin-top: 12px;">Мне должны:</div>` + renderTotalsHtml(theyOwe);
-            }
-            if (iOwe.length === 0 && theyOwe.length === 0) {
-                statsHtml = '<div class="total-display">Нет долгов</div>';
-            }
+            if (iOwe.length > 0) statsHtml += `<div class="total-label">Я должен:</div>` + renderTotalsHtml(iOwe);
+            if (theyOwe.length > 0) statsHtml += `<div class="total-label" style="margin-top: 12px;">Мне должны:</div>` + renderTotalsHtml(theyOwe);
+            if (iOwe.length === 0 && theyOwe.length === 0) statsHtml = '<div class="total-display">Нет долгов</div>';
             statsContainer.innerHTML = statsHtml;
 
             const container = document.getElementById('list-container');
             const emptyState = document.getElementById('empty-state');
-
             container.innerHTML = '';
             userDebts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -714,51 +522,41 @@
 
         // --- Name Change Logic ---
         function openNameModal() {
-            const currentName = document.getElementById('current-user-info').innerText;
-            document.getElementById('new-name-input').value = currentName;
+            document.getElementById('new-name-input').value = document.getElementById('current-user-info').innerText;
             document.getElementById('name-modal').classList.add('active');
         }
-
         function closeNameModal() { document.getElementById('name-modal').classList.remove('active'); }
 
         async function saveNewName() {
             const newName = document.getElementById('new-name-input').value.trim();
-            if (!newName) return alert("Имя не может быть пустым");
-
+            if (!newName) return;
             try {
                 const resp = await fetch(`/user/update/${tgId}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ name: newName })
                 });
-
                 if (resp.ok) {
                     const user = await resp.json();
                     document.getElementById('current-user-info').innerText = user.name;
                     closeNameModal();
                     await loadUsers();
-                } else { alert("Ошибка обновления имени"); }
-            } catch (e) { alert("Ошибка сети"); }
+                } else console.error("Update error");
+            } catch (e) { console.error(e); }
         }
 
         // --- Create Logic ---
         function openCreateModal() {
             const title = document.getElementById('create-modal-title');
-            if (currentView === 'detail' && selectedUserId) {
-                document.getElementById('create-user-select').value = selectedUserId;
-            }
+            if (currentView === 'detail' && selectedUserId) document.getElementById('create-user-select').value = selectedUserId;
 
-            if (activeTab === 'owe') {
-                title.innerText = "Новый долг (Я должен)";
-            } else {
-                title.innerText = "Новый долг (Мне должны)";
-            }
+            if (activeTab === 'owe') title.innerText = "Новый долг (Я должен)";
+            else title.innerText = "Новый долг (Мне должны)";
 
             document.getElementById('create-modal').classList.add('active');
             document.getElementById('create-amount').value = '';
             document.getElementById('create-desc').value = '';
         }
-
         function closeCreateModal() { document.getElementById('create-modal').classList.remove('active'); }
 
         async function createDebt() {
@@ -767,48 +565,33 @@
             const currency = document.getElementById('create-currency').value;
             const desc = document.getElementById('create-desc').value;
 
-            if (!amount || amount <= 0) return alert("Введите сумму");
+            if (!amount || amount <= 0) return;
 
             let debtorId, creditorId;
-            if (activeTab === 'owe') {
-                debtorId = Number(tgId);
-                creditorId = Number(otherUserId);
-            } else {
-                debtorId = Number(otherUserId);
-                creditorId = Number(tgId);
-            }
+            if (activeTab === 'owe') { debtorId = Number(tgId); creditorId = Number(otherUserId); }
+            else { debtorId = Number(otherUserId); creditorId = Number(tgId); }
 
             try {
                 const resp = await fetch('/debt/create', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        debtor_id: debtorId,
-                        creditor_id: creditorId,
-                        amount, currency, description: desc
-                    })
+                    body: JSON.stringify({ debtor_id: debtorId, creditor_id: creditorId, amount, currency, description: desc })
                 });
                 if (resp.ok) closeCreateModal();
-                else {
-                    const err = await resp.json();
-                    alert(err.detail);
-                }
-            } catch(e) { alert("Ошибка сети"); }
+                else { const err = await resp.json(); console.error(err.detail); }
+            } catch(e) { console.error(e); }
         }
 
         // --- Edit Logic ---
         function openEditModal(id) {
             const debt = allDebts.find(d => d.id === id);
             if (!debt) return;
-
             document.getElementById('edit-debt-id').value = id;
             document.getElementById('edit-amount').value = debt.amount;
             document.getElementById('edit-currency').value = debt.currency;
             document.getElementById('edit-desc').value = debt.description || '';
-
             document.getElementById('edit-modal').classList.add('active');
         }
-
         function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); }
 
         async function saveDebtChanges() {
@@ -818,27 +601,33 @@
                 currency: document.getElementById('edit-currency').value,
                 description: document.getElementById('edit-desc').value
             };
-
             const resp = await fetch(`/debt/update/${id}`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
+                method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             });
-            if (resp.ok) closeEditModal();
-            else alert("Ошибка");
+            if (resp.ok) closeEditModal(); else console.error("Error");
         }
 
         async function markAsPaid() {
             const id = document.getElementById('edit-debt-id').value;
-            if (!confirm("Закрыть долг?")) return;
-
-            const resp = await fetch(`/debt/update/${id}`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ is_paid: true })
-            });
-            if (resp.ok) closeEditModal();
-            else alert("Ошибка");
+            // Используем Telegram Confirm для удобства
+            if (window.Telegram && window.Telegram.WebApp) {
+                 window.Telegram.WebApp.showConfirm("Закрыть долг?", async (confirmed) => {
+                    if (confirmed) {
+                        const resp = await fetch(`/debt/update/${id}`, {
+                            method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true })
+                        });
+                        if (resp.ok) closeEditModal(); else console.error("Error");
+                    }
+                });
+            } else {
+                // Fallback
+                if(confirm("Закрыть долг?")) {
+                    const resp = await fetch(`/debt/update/${id}`, {
+                        method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true })
+                    });
+                    if (resp.ok) closeEditModal(); else console.error("Error");
+                }
+            }
         }
     </script>
 </body>
