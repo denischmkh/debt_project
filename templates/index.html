@@ -17,7 +17,7 @@
             --danger-color: #e4a83b;
             --success-color: #4fae4e;
             --border-color: #0e1621;
-            --input-bg: #242f3d; /* Фон для инпутов и селектов */
+            --input-bg: #242f3d;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -69,17 +69,17 @@
             gap: 10px;
         }
 
-        /* --- Currency Selector (New Style) --- */
+        /* --- Currency Selector --- */
         .currency-selector-wrapper { width: 100%; }
 
         .currency-select {
             width: 100%;
-            padding: 14px; /* Такие же отступы как у инпутов */
-            background-color: var(--input-bg); /* Такой же фон */
+            padding: 14px;
+            background-color: var(--input-bg);
             border: none;
-            border-radius: 10px; /* Такое же скругление */
+            border-radius: 10px;
             color: var(--text-color);
-            font-size: 16px; /* Такой же размер шрифта */
+            font-size: 16px;
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b9198' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
@@ -425,6 +425,7 @@
         // --- Currency Logic (Backend Integration) ---
         async function fetchCurrencyRates() {
             try {
+                // Используем относительный путь, Caddy сам перенаправит на бэкенд
                 const resp = await fetch('/currency');
                 if (resp.ok) {
                     currencyRates = await resp.json();
@@ -440,11 +441,7 @@
         function getRate(fromCurr, toCurr) {
             if (fromCurr === toCurr) return 1;
             if (!currencyRates[fromCurr] || !currencyRates[toCurr]) return null;
-
             // Formula: Amount * (RateFrom / RateTo)
-            // Example: 100 UAH to USD. Rates: UAH=0.023, USD=1.
-            // 100 * (0.023 / 1) = 2.3 USD. Correct.
-
             return currencyRates[fromCurr] / currencyRates[toCurr];
         }
 
@@ -505,21 +502,14 @@
 
         // --- WebSockets ---
         function connectWS() {
-            // Определяем протокол: если зашли через https, то wss, иначе ws
+            // Определяем протокол ws или wss автоматически на основе текущего протокола страницы
             const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-
-            // ВАЖНО: Мы добавляем /ws/ в начало пути, как прописано в Caddyfile
-            // И убираем жесткую привязку к порту, так как Caddy сам всё разрулит
+            // Подключаемся к ws://domain.com/ws/{id}
             ws = new WebSocket(`${proto}://${location.host}/ws/${tgId}`);
 
             ws.onmessage = (e) => {
                 allDebts = JSON.parse(e.data);
                 renderCurrentView();
-            };
-
-            ws.onclose = () => {
-                console.log("WS closed. Reconnecting...");
-                setTimeout(connectWS, 3000); // Авто-переподключение
             };
         }
 
@@ -536,7 +526,6 @@
             const rawTotals = calculateTotals(debts);
             const targetCurr = selectedCurrency;
 
-            // Mode: All currencies
             if (targetCurr === 'all') {
                 if (Object.keys(rawTotals).length === 0) return '<div class="total-display">0.00</div>';
                 let html = '';
@@ -546,7 +535,6 @@
                 return html;
             }
 
-            // Mode: Specific Currency
             let totalSum = 0;
             let conversionFailed = false;
 
