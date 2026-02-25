@@ -1,0 +1,45 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="aiofiles" />
+          <option value="aiogram" />
+          <option value="aiohappyeyeballs" />
+          <option value="aiohttp" />
+          <option value="aiosignal" />
+          <option value="annotated-types" />
+          <option value="attrs" />
+          <option value="certifi" />
+          <option value="frozenlist" />
+          <option value="idna" />
+          <option value="magic-filter" />
+          <option value="MouseInfo" />
+          <option value="multidict" />
+          <option value="propcache" />
+          <option value="pyaes" />
+          <option value="pyasn1" />
+          <option value="pydantic" />
+          <option value="pydantic_core" />
+          <option value="PyMsgBox" />
+          <option value="pyperclip" />
+          <option value="PyRect" />
+          <option value="Pyrogram" />
+          <option value="PyScreeze" />
+          <option value="PySocks" />
+          <option value="python-dotenv" />
+          <option value="pytweening" />
+          <option value="pytz" />
+          <option value="rsa" />
+          <option value="setuptools" />
+          <option value="Telethon" />
+          <option value="typing_extensions" />
+          <option value="yarl" />
+          <option value="bs4" />
+          <option value="git-filter-repo" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

@@ -1,0 +1,60 @@
+services:
+  # 1. База данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: debt_db
+    restart: always
+    env_file: .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+
+  # 2. Redis для кэширования и работы WebSockets
+  redis:
+    image: redis:alpine
+    container_name: debt_redis
+    restart: always
+    expose:
+      - "6379"
+
+  # 3. Бэкенд (Твое FastAPI приложение)
+  backend:
+    build: .
+    container_name: debt_backend
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file: .env
+    expose:
+      - "8000"
+    environment:
+      # Прокидываем URL базы, заменяя localhost на имя сервиса 'db'
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+
+  # 4. Веб-сервер Caddy (HTTPS + Статика)
+  caddy:
+    image: caddy:latest
+    container_name: debt_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./templates:/usr/share/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

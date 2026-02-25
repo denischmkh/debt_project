@@ -1,0 +1,24 @@
+# Секреты и настройки
+.env
+app/.env
+*.env
+
+# Виртуальное окружение (локальное)
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Системные файлы и логи
+.DS_Store
+*.log

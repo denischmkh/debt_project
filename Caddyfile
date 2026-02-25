@@ -1,0 +1,8 @@
+denys-personal-source.space, www.denys-personal-source.space {
+    root * /usr/share/caddy
+    file_server
+    reverse_proxy /user/* backend:8000
+    reverse_proxy /debt/* backend:8000
+    reverse_proxy /users backend:8000
+    reverse_proxy /ws/* backend:8000
+}
