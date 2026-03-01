@@ -4,7 +4,7 @@ import os
 import hmac
 import hashlib
 
-app = FastAPI(prefix="/deploy", tags=["deploy"])
+app = FastAPI()
 
 # Секретный токен, который вы укажете в настройках GitHub
 GH_SECRET = os.getenv("GH_SECRET")
@@ -23,7 +23,7 @@ def verify_signature(payload: bytes, signature: str):
     return hmac.compare_digest(mac.hexdigest(), signature_hash)
 
 
-@app.post("/")
+@app.post("/deploy")
 async def handle_deploy(request: Request):
     # 1. Проверяем подпись (безопасность)
     signature = request.headers.get("X-Hub-Signature-256")
