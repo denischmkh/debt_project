@@ -36,8 +36,13 @@ async def handle_deploy(request: Request):
 
     # 2. Запускаем ваш Bash-скрипт
     try:
-        # Используем Popen, чтобы не блокировать сервер на время деплоя
-        subprocess.Popen(["bash", DEPLOY_SCRIPT])
-        return {"status": "Deployment started in background"}
+        # Используем run вместо Popen, чтобы увидеть результат в логах
+        result = subprocess.run(
+            ["bash", DEPLOY_SCRIPT],
+            capture_output=True,
+            text=True
+        )
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")  # Вот здесь будет причина падения
     except Exception as e:
-        return {"status": "Error", "message": str(e)}
+        print(f"CRITICAL ERROR: {e}")
