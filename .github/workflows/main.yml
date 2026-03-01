@@ -3,15 +3,25 @@ name: Continuous Deployment
 on:
   push:
     branches:
-      - main  # Деплой будет срабатывать только при пуше в main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Webhook
-        uses: swdotcom/webhooks-handler@v1
-        with:
-          endpoint: https://denys-personal-source.space/deploy
-          secret: ${{ secrets.GH_SECRET }}
-          data: '{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
+      - name: Trigger Webhook via Curl
+        env:
+          GH_SECRET: ${{ secrets.GH_SECRET }}
+          WEBHOOK_URL: "https://denys-personal-source.space/deploy"
+        run: |
+          # Формируем полезную нагрузку (payload)
+          PAYLOAD='{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
+          
+          # Вычисляем подпись HMAC-SHA256 (как это делает GitHub)
+          SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$GH_SECRET" | sed 's/^.* //')
+          
+          # Отправляем запрос с правильным заголовком
+          curl -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+            -d "$PAYLOAD"
