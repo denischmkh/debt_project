@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 import subprocess
 import os
 import hmac
 import hashlib
 
-router = APIRouter(prefix="/deploy", tags=["deploy"])
+app = FastAPI(prefix="/deploy", tags=["deploy"])
 
 # Секретный токен, который вы укажете в настройках GitHub
 GH_SECRET = os.getenv("GH_SECRET")
@@ -23,7 +23,7 @@ def verify_signature(payload: bytes, signature: str):
     return hmac.compare_digest(mac.hexdigest(), signature_hash)
 
 
-@router.post("/")
+@app.post("/")
 async def handle_deploy(request: Request):
     # 1. Проверяем подпись (безопасность)
     signature = request.headers.get("X-Hub-Signature-256")
@@ -46,3 +46,8 @@ async def handle_deploy(request: Request):
         print(f"STDERR: {result.stderr}")  # Вот здесь будет причина падения
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
+
+
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=9000)
