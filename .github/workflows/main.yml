@@ -12,7 +12,7 @@ jobs:
       - name: Trigger Webhook via Curl
         env:
           GH_SECRET: ${{ secrets.GH_SECRET }}
-          WEBHOOK_URL: "https://denys-personal-source.space/deploy"
+          WEBHOOK_URL: "https://denys-personal-source.space/deploy/"
         run: |
           PAYLOAD='{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
           SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$GH_SECRET" | sed 's/^.* //')
