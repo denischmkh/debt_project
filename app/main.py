@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
         FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
         # await conn.run_sync(Base.metadata.drop_all)
         # await conn.run_sync(Base.metadata.drop_all)
+        # await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
 
