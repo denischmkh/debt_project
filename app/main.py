@@ -35,6 +35,7 @@ async def lifespan(app: FastAPI):
         redis = aioredis.from_url(os.getenv("REDIS_URL"))
         FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 bot = Bot(token=os.getenv("BOT_TOKEN"))
