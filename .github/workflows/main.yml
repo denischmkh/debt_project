@@ -1,0 +1,17 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main  # Деплой будет срабатывать только при пуше в main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webhook
+        uses: swdotcom/webhooks-handler@v1
+        with:
+          endpoint: https://denys-personal-source.space/deploy
+          secret: ${{ secrets.GH_SECRET }}
+          data: '{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
