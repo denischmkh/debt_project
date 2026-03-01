@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 import subprocess
 import os
 import hmac
 import hashlib
 
-app = FastAPI()
+router = APIRouter(prefix="/deploy", tags=["deploy"])
 
 # Секретный токен, который вы укажете в настройках GitHub
 GH_SECRET = os.getenv("GH_SECRET")
@@ -23,7 +23,7 @@ def verify_signature(payload: bytes, signature: str):
     return hmac.compare_digest(mac.hexdigest(), signature_hash)
 
 
-@app.post("/deploy")
+@router.post("/")
 async def handle_deploy(request: Request):
     # 1. Проверяем подпись (безопасность)
     signature = request.headers.get("X-Hub-Signature-256")
@@ -41,10 +41,3 @@ async def handle_deploy(request: Request):
         return {"status": "Deployment started in background"}
     except Exception as e:
         return {"status": "Error", "message": str(e)}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    # Запускаем на порту 9000
-    uvicorn.run(app, host="0.0.0.0", port=9000)

@@ -24,6 +24,7 @@ from aiogram import Bot
 
 from app.database import Base, engine, async_session, User, Debt
 from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema
+from app.deploy import router as deploy_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -41,6 +42,9 @@ async def lifespan(app: FastAPI):
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 
 app = FastAPI(lifespan=lifespan)
+
+app.include_router(deploy_router)
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 
