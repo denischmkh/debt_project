@@ -14,14 +14,14 @@ jobs:
           GH_SECRET: ${{ secrets.GH_SECRET }}
           WEBHOOK_URL: "https://denys-personal-source.space/deploy"
         run: |
-          # Формируем полезную нагрузку (payload)
           PAYLOAD='{"ref": "${{ github.ref }}", "repository": "${{ github.repository }}"}'
-          
-          # Вычисляем подпись HMAC-SHA256 (как это делает GitHub)
           SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$GH_SECRET" | sed 's/^.* //')
           
-          # Отправляем запрос с правильным заголовком
-          curl -X POST "$WEBHOOK_URL" \
+          echo "--- Sending request to $WEBHOOK_URL ---"
+          
+          # Флаг --fail заставит экшен упасть, если сервер ответит 4xx или 5xx
+          # Флаг -i выведет заголовки ответа в логи GitHub
+          curl --fail -i -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
             -d "$PAYLOAD"
