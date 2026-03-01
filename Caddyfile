@@ -14,5 +14,5 @@ denys-personal-source.space, www.denys-personal-source.space {
     reverse_proxy /currency backend:8000
 
     #Вебхук для деплоя
-    reverse_proxy /deploy 0.0.0.0:8000
+    reverse_proxy /deploy 172.17.0.1:9000
 }
