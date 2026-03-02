@@ -45,6 +45,14 @@ class DebtReadSchema(DebtCreateSchema):
     debtor: UserSchema
     created_at: str
 
+class DebtClosingConfirmationSmallSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    message: str
+    debt_id: int
+
+class DebtExtendedReadSchema(DebtReadSchema):
+    debt_closing_confirmation: DebtClosingConfirmationSmallSchema | None = None
+
 class DebtClosingConfirmationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     message: str

@@ -12,6 +12,7 @@
             --text-color: #ffffff; --text-secondary: #8b9198; --accent-color: #5288c1;
             --danger-color: #e4a83b; --success-color: #4fae4e; --border-color: #0e1621;
             --input-bg: #242f3d; --notification-bg: #ff4d4d;
+            --warning-color: #ffa500; /* Оранжевый для ожидающих */
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -33,7 +34,7 @@
             cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
         .notification-icon svg { width: 24px; height: 24px; fill: none; stroke: var(--text-secondary); stroke-width: 2; }
-        .notification-icon.active svg { stroke: var(--accent-color); }
+        .notification-icon.active svg { stroke: var(--warning-color); }
         .badge {
             position: absolute; top: -4px; right: -4px; background-color: var(--notification-bg);
             color: white; border-radius: 50%; width: 18px; height: 18px;
@@ -67,14 +68,44 @@
         .tab-btn.active.success { color: var(--success-color); }
         .main-content { flex: 1; padding: 16px; padding-bottom: 100px; }
         .list-container { display: flex; flex-direction: column; gap: 12px; }
+
+        /* Debt Card Styles */
         .debt-card {
             background-color: var(--card-bg); border-radius: 12px; padding: 16px;
             border-left: 4px solid transparent; display: flex; flex-direction: column;
-            gap: 8px; cursor: pointer; transition: background-color 0.2s;
+            gap: 8px; cursor: pointer; transition: background-color 0.2s, opacity 0.2s;
+            position: relative;
         }
         .debt-card:active { background-color: #2a3a4d; }
+
+        /* Styles for pending confirmation */
+        .debt-card.pending-confirmation {
+            border-left-color: var(--warning-color); /* Оранжевая полоска */
+        }
+        .debt-card.pending-confirmation::before {
+            content: "Ожидает подтверждения";
+            position: absolute; top: 8px; right: 8px;
+            background-color: rgba(255, 165, 0, 0.2); color: var(--warning-color);
+            font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;
+        }
+        /* Если я должник и ожидается подтверждение - делаем карточку полупрозрачной и неактивной */
+        .debt-card.locked {
+            opacity: 0.6;
+            pointer-events: none; /* Запрет кликов */
+        }
+        /* Разрешаем клики только для кредитора */
+        .debt-card.pending-confirmation.creditor-view {
+            pointer-events: auto;
+            cursor: pointer;
+            opacity: 1;
+        }
+
         .debt-card.mode-owe { border-left-color: var(--danger-color); }
         .debt-card.mode-owed { border-left-color: var(--success-color); }
+        /* Убираем конфликт цветов, если pending */
+        .debt-card.pending-confirmation.mode-owe { border-left-color: var(--warning-color); }
+        .debt-card.pending-confirmation.mode-owed { border-left-color: var(--warning-color); }
+
         .card-row { display: flex; justify-content: space-between; align-items: center; }
         .amount-block { font-size: 18px; font-weight: 600; color: var(--text-color); }
         .currency-badge {
@@ -142,7 +173,7 @@
         .hidden { display: none !important; }
         .empty-text { text-align: center; color: var(--text-secondary); margin-top: 40px; font-size: 15px; }
 
-        /* Confirmation Items */
+        /* Confirmation Items in List */
         .confirmation-item {
             background-color: var(--bg-color); padding: 12px; border-radius: 10px;
             margin-bottom: 10px; cursor: pointer; border-left: 4px solid var(--success-color);
@@ -291,7 +322,6 @@
         let ws = null;
         let usersCache = [];
         let allDebts = [];
-        let pendingConfirmations = [];
         let activeTab = 'owe';
         let currentView = 'main';
         let selectedUserId = null;
@@ -368,7 +398,6 @@
         async function initApp(user) {
             document.getElementById('current-user-info').innerText = user.name;
             await loadUsers();
-            await loadConfirmations();
             connectWS();
         }
 
@@ -380,24 +409,22 @@
             }
         }
 
-        // --- Confirmations Logic ---
-        async function loadConfirmations() {
-            try {
-                const resp = await fetch(`/confirmations/${tgId}`);
-                if (resp.ok) {
-                    pendingConfirmations = await resp.json();
-                    updateConfirmationBadge();
-                }
-            } catch (e) { console.error(e); }
-        }
-
+        // --- Confirmations Logic (Updated to use allDebts) ---
         function updateConfirmationBadge() {
+            // Считаем долги, где я КРЕДИТОР и есть подтверждение (debt_closing_confirmation не null)
+            const confirmations = allDebts.filter(d =>
+                d.is_paid === false &&
+                d.creditor_id == tgId &&
+                d.debt_closing_confirmation
+            );
+
             const icon = document.getElementById('notification-icon');
             const badge = document.getElementById('notification-badge');
-            if (pendingConfirmations.length > 0) {
+
+            if (confirmations.length > 0) {
                 icon.classList.remove('hidden');
                 icon.classList.add('active');
-                badge.innerText = pendingConfirmations.length;
+                badge.innerText = confirmations.length;
             } else {
                 icon.classList.add('hidden');
                 icon.classList.remove('active');
@@ -408,13 +435,19 @@
             const list = document.getElementById('confirmations-list');
             list.innerHTML = '';
 
-            if (pendingConfirmations.length === 0) {
+            // Фильтруем долги с подтверждениями
+            const confirmations = allDebts.filter(d =>
+                d.is_paid === false &&
+                d.creditor_id == tgId &&
+                d.debt_closing_confirmation
+            );
+
+            if (confirmations.length === 0) {
                 list.innerHTML = '<div class="empty-text">Нет ожидающих запросов</div>';
             } else {
-                pendingConfirmations.forEach(conf => {
+                confirmations.forEach(debt => {
                     const item = document.createElement('div');
                     item.className = 'confirmation-item';
-                    const debt = conf.debt;
                     const debtor = debt.debtor;
 
                     item.innerHTML = `
@@ -423,7 +456,8 @@
                     `;
                     item.onclick = () => {
                         closeConfirmationsModal();
-                        openEditModal(debt.id, conf.id);
+                        // Передаем id подтверждения, которое лежит внутри объекта долга
+                        openEditModal(debt.id, debt.debt_closing_confirmation.id);
                     };
                     list.appendChild(item);
                 });
@@ -440,8 +474,8 @@
             const proto = location.protocol === 'https:' ? 'wss' : 'ws';
             ws = new WebSocket(`${proto}://${location.host}/ws/${tgId}`);
             ws.onmessage = (e) => {
-                loadConfirmations();
                 allDebts = JSON.parse(e.data);
+                updateConfirmationBadge(); // Обновляем бейдж при получении данных
                 renderCurrentView();
             };
         }
@@ -505,6 +539,8 @@
         function createCard(debt, isMainView) {
             const div = document.createElement('div');
             let modeClass = '', label = '', otherUser = null;
+
+            // Определяем базовые классы
             if (isMainView) {
                 if (activeTab === 'owe') { modeClass = 'mode-owe'; otherUser = debt.creditor; label = 'Кредитор'; }
                 else { modeClass = 'mode-owed'; otherUser = debt.debtor; label = 'Должник'; }
@@ -513,9 +549,35 @@
                 else { modeClass = 'mode-owed'; label = 'Мне должны'; }
                 otherUser = debt.creditor.telegram_id == tgId ? debt.debtor : debt.creditor;
             }
-            const dateStr = new Date(debt.created_at).toLocaleDateString('ru-RU');
+
             div.className = `debt-card ${modeClass}`;
-            div.onclick = () => openEditModal(debt.id);
+
+            // Логика ожидающих подтверждения
+            const hasConfirmation = debt.debt_closing_confirmation;
+
+            if (hasConfirmation) {
+                div.classList.add('pending-confirmation');
+
+                // Если я должник (тот, кто просит закрыть) -> блокируем карточку
+                if (debt.debtor_id == tgId) {
+                    div.classList.add('locked');
+                }
+                // Если я кредитор -> разрешаем клик для подтверждения
+                else if (debt.creditor_id == tgId) {
+                    div.classList.add('creditor-view');
+                }
+            }
+
+            // Обработчик клика
+            if (hasConfirmation && debt.debtor_id == tgId) {
+                // Если карточка заблокирована для должника, ничего не делаем при клике
+                div.onclick = () => {};
+            } else {
+                div.onclick = () => openEditModal(debt.id, hasConfirmation ? hasConfirmation.id : null);
+            }
+
+            const dateStr = new Date(debt.created_at).toLocaleDateString('ru-RU');
+
             div.innerHTML = `
                 <div class="card-row">
                     <div class="amount-block">${debt.amount} <span class="currency-badge">${debt.currency}</span></div>
@@ -523,6 +585,7 @@
                 </div>
                 <div><div class="counterparty-name">${label}: <b class="clickable-name" onclick="event.stopPropagation(); openUserDetail(${otherUser.telegram_id})">${otherUser.name}</b></div></div>
                 <div class="description-text">${debt.description || 'Без описания'}</div>`;
+
             return div;
         }
 
@@ -663,24 +726,19 @@
                     body: JSON.stringify(payload)
                 });
 
-                // Try to parse JSON regardless of status code
                 let data = null;
                 try {
                     data = await resp.json();
-                } catch (e) {
-                    // If not JSON, ignore
-                }
+                } catch (e) {}
 
                 if (resp.ok) {
                     closeEditModal();
-                    loadConfirmations();
                 } else {
-                    // Show backend error detail if available
                     const errorMsg = data && data.detail ? data.detail : `Ошибка: ${resp.status}`;
                     showTGAlert(errorMsg);
                 }
             } catch(e) {
-                showTGAlert("Ошибка сети. Проверьте подключение.");
+                showTGAlert("Ошибка сети.");
                 console.error(e);
             }
         }
@@ -694,7 +752,6 @@
                     const resp = await fetch(`/confirmations/${confId}`, { method: 'DELETE' });
                     if (resp.ok) {
                         closeEditModal();
-                        loadConfirmations();
                         showTGAlert("Запрос отклонен");
                     } else {
                         showTGAlert("Ошибка удаления запроса");

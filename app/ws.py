@@ -5,8 +5,8 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import aliased
 from starlette.websockets import WebSocket
 
-from app.database import Debt, async_session, User
-from app.schemas import UserSchema, DebtReadSchema
+from app.database import Debt, async_session, User, DebtClosingConfirmation
+from app.schemas import UserSchema, DebtReadSchema, DebtExtendedReadSchema, DebtClosingConfirmationSmallSchema
 
 
 class WebsocketManager:
@@ -18,14 +18,15 @@ class WebsocketManager:
         async with async_session() as session:
             debtor_alias, creditor_alias = aliased(User), aliased(User)
             stmt = (
-                select(Debt, debtor_alias, creditor_alias)
+                select(Debt, DebtClosingConfirmation, debtor_alias, creditor_alias)
+                .join(DebtClosingConfirmation, DebtClosingConfirmation.debt_id == Debt.id)
                 .join(debtor_alias, Debt.debtor_id == debtor_alias.telegram_id)
                 .join(creditor_alias, Debt.creditor_id == creditor_alias.telegram_id)
                 .where(or_(Debt.creditor_id == tg_id, Debt.debtor_id == tg_id))
             )
             rows = (await session.execute(stmt)).all()
             return [
-                DebtReadSchema(
+                DebtExtendedReadSchema(
                     id=debt.id,
                     amount=debt.amount,
                     currency=debt.currency,
@@ -36,7 +37,8 @@ class WebsocketManager:
                     debtor_id=debt.debtor_id,
                     creditor_id=debt.creditor_id,
                     created_at=str(debt.created_at),
-                ) for debt, debtor, creditor in rows
+                    debt_closing_confirmation=DebtClosingConfirmationSmallSchema.model_validate(debt_closing_conf) if debt_closing_conf else None,
+                ) for debt, debt_closing_conf, debtor, creditor in rows
             ]
 
     async def connect(self, tg_id: int, ws: WebSocket):
