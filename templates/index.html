@@ -273,11 +273,11 @@
                 Должник запросил закрытие этого долга.
             </div>
 
-            <!-- Standard Buttons (Visible by default) -->
+            <!-- Standard Buttons -->
             <button id="btn-save" class="btn-action btn-primary" onclick="saveDebtChanges()">Сохранить</button>
             <button id="btn-close-debt" class="btn-action btn-success" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Закрыть долг</button>
 
-            <!-- Confirmation Flow Buttons (Hidden by default) -->
+            <!-- Confirmation Flow Buttons -->
             <button id="btn-confirm-close" class="btn-action btn-success hidden" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Подтвердить закрытие</button>
             <button id="btn-reject-close" class="btn-action btn-danger hidden" onclick="rejectConfirmation()">Отклонить запрос</button>
 
@@ -625,10 +625,10 @@
             // If confirmation_id is present, we are viewing a request from creditor's side
             if (confirmation_id) {
                 info.style.display = 'block';
-                btnSave.classList.add('hidden'); // Hide standard save
-                btnClose.classList.add('hidden'); // Hide standard close
-                btnConfirm.classList.remove('hidden'); // Show confirm
-                btnReject.classList.remove('hidden'); // Show reject
+                btnSave.classList.add('hidden');
+                btnClose.classList.add('hidden');
+                btnConfirm.classList.remove('hidden');
+                btnReject.classList.remove('hidden');
             }
 
             document.getElementById('edit-modal').classList.add('active');
@@ -650,14 +650,10 @@
         async function markAsPaid() {
             const id = document.getElementById('edit-debt-id').value;
             const payload = { is_paid: true };
-
-            showTGConfirm("Подтвердить действие?", async () => {
-                await performDebtUpdate(id, payload);
-            });
+            await performDebtUpdate(id, payload);
         }
 
         async function performDebtUpdate(id, payload) {
-            // Use the new V2 endpoint
             const url = `/v2/debt/update/${id}?current_user_id=${tgId}`;
 
             try {
@@ -667,20 +663,24 @@
                     body: JSON.stringify(payload)
                 });
 
+                // Try to parse JSON regardless of status code
+                let data = null;
+                try {
+                    data = await resp.json();
+                } catch (e) {
+                    // If not JSON, ignore
+                }
+
                 if (resp.ok) {
                     closeEditModal();
                     loadConfirmations();
                 } else {
-                    const err = await resp.json();
-                    if (resp.status === 400 && err.detail && err.detail.includes("подтверждения")) {
-                        showTGAlert(err.detail);
-                        closeEditModal();
-                    } else {
-                        showTGAlert(err.detail || "Ошибка");
-                    }
+                    // Show backend error detail if available
+                    const errorMsg = data && data.detail ? data.detail : `Ошибка: ${resp.status}`;
+                    showTGAlert(errorMsg);
                 }
             } catch(e) {
-                showTGAlert("Ошибка сети");
+                showTGAlert("Ошибка сети. Проверьте подключение.");
                 console.error(e);
             }
         }
