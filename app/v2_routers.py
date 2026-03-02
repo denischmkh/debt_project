@@ -46,7 +46,7 @@ async def update_debt(
             exclude_unset=True,
             exclude_none=True
         )
-        if updated_debt_data.is_paid and current_debt.debtor_id == current_user_id:
+        if updated_debt_data.get("is_paid") and current_debt.debtor_id == current_user_id:
             debt_confirmation = await get_debt_confirmation(debt_id=debt_id)
             if not debt_confirmation:
                 current_user = await get_user_by_telegram_id(telegram_id=current_user_id)
