@@ -70,7 +70,8 @@ async def update_debt(
 
                 # Обновляем объект для получения ID (если нужно)
                 await session.refresh(new_debt_confirmation)
-
+                await ws_manager.broadcast_user_update(current_debt.creditor_id)
+                await ws_manager.broadcast_user_update(current_debt.debtor_id)
                 # Безопасная отправка уведомления
                 try:
                     await send_notification_to_users(
