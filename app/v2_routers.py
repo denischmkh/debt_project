@@ -51,6 +51,7 @@ async def update_debt(
 
         # Логика подтверждения для должника
         if updated_debt_data.get("is_paid") and current_debt.debtor_id == current_user_id:
+            updated_debt_data["is_paid"] = False
             debt_confirmation = await get_debt_confirmation(debt_id=debt_id)
 
             if not debt_confirmation:
