@@ -44,7 +44,6 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(router=v2_routers)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
@@ -71,9 +70,11 @@ class DebtAdmin(ModelView, model=Debt):
     name_plural = "Долги"
     icon = "fa-solid fa-money-bill"
 
-# Регистрируем
 admin.add_view(UserAdmin)
 admin.add_view(DebtAdmin)
+
+app.include_router(router=v2_routers)
+
 
 # --- Роутеры ---
 

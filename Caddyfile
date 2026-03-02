@@ -1,21 +1,18 @@
 denys-personal-source.space, www.denys-personal-source.space {
-    # Обрабатываем статику только если файл реально существует в root
-    handle_path /static/* {
-        root * /usr/share/caddy
-        file_server
+    # 1. Сначала проверяем пути, которые должны уходить в Python
+    # Добавляем звездочку к /admin*, чтобы ловить /admin/statics, /admin/user и т.д.
+    @backend {
+        path /admin* /docs* /openapi.json* /v2* /user* /debt* /users* /ws* /currency* /confirmations*
     }
 
-    # Проксируем админку со всеми вложенными путями
-    reverse_proxy /admin* backend:8000
+    handle @backend {
+        reverse_proxy backend:8000
+    }
 
-    # Все остальные API пути
-    reverse_proxy /v2/* backend:8000
-    reverse_proxy /docs backend:8000
-    reverse_proxy /openapi.json backend:8000
-    reverse_proxy /user/* backend:8000
-    reverse_proxy /debt/* backend:8000
-    reverse_proxy /users backend:8000
-    reverse_proxy /ws/* backend:8000
-    reverse_proxy /currency backend:8000
-    reverse_proxy /confirmations/* backend:8000
+    # 2. Только если путь не совпал с верхним списком, ищем статику (фронтенд)
+    handle {
+        root * /usr/share/caddy
+        file_server
+        try_files {path} /index.html
+    }
 }
