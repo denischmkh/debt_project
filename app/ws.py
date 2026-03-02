@@ -19,7 +19,7 @@ class WebsocketManager:
             debtor_alias, creditor_alias = aliased(User), aliased(User)
             stmt = (
                 select(Debt, DebtClosingConfirmation, debtor_alias, creditor_alias)
-                .join(DebtClosingConfirmation, DebtClosingConfirmation.debt_id == Debt.id)
+                .outerjoin(DebtClosingConfirmation, DebtClosingConfirmation.debt_id == Debt.id)
                 .join(debtor_alias, Debt.debtor_id == debtor_alias.telegram_id)
                 .join(creditor_alias, Debt.creditor_id == creditor_alias.telegram_id)
                 .where(or_(Debt.creditor_id == tg_id, Debt.debtor_id == tg_id))
