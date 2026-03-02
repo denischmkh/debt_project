@@ -24,7 +24,11 @@ from aiogram import Bot
 
 from app.database import Base, engine, async_session, User, Debt
 from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema
+from app.utils import send_notification_to_users, get_user_by_telegram_id, get_debt_full_info
+from app.v2_routers import router as v2_routers
 from dotenv import load_dotenv
+
+from app.ws import ws_manager
 
 load_dotenv()
 
@@ -37,122 +41,11 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     yield
 
-bot = Bot(token=os.getenv("BOT_TOKEN"))
-
 app = FastAPI(lifespan=lifespan)
+app.include_router(router=v2_routers)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
-
-# --- Утилиты ---
-
-async def get_debt_full_info(debt_id: int) -> DebtReadSchema:
-    async with async_session() as session:
-        debtor_alias = aliased(User)
-        creditor_alias = aliased(User)
-        # ВАЖНО: Джойнимся по telegram_id
-        stmt = (
-            select(Debt, debtor_alias, creditor_alias)
-            .join(debtor_alias, Debt.debtor_id == debtor_alias.telegram_id)
-            .join(creditor_alias, Debt.creditor_id == creditor_alias.telegram_id)
-            .where(Debt.id == debt_id)
-        )
-        result = await session.execute(stmt)
-        row = result.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Debt not found")
-
-        debt, debtor, creditor = row
-        return DebtReadSchema(
-            id=debt.id,
-            amount=debt.amount,
-            currency=debt.currency,
-            description=debt.description,
-            is_paid=debt.is_paid,
-            creditor_id=creditor.telegram_id,
-            debtor_id=debtor.telegram_id,
-            creditor=UserSchema.model_validate(creditor),
-            debtor=UserSchema.model_validate(debtor),
-            created_at=str(debt.created_at),
-        )
-
-
-# --- WebSocket Manager ---
-
-class WebsocketManager:
-    def __init__(self):
-        # Используем defaultdict(list) для автоматического создания списка при обращении
-        self.active_connections: dict[int, list[WebSocket]] = defaultdict(list)
-
-    async def get_user_debts(self, tg_id: int):
-        async with async_session() as session:
-            debtor_alias, creditor_alias = aliased(User), aliased(User)
-            stmt = (
-                select(Debt, debtor_alias, creditor_alias)
-                .join(debtor_alias, Debt.debtor_id == debtor_alias.telegram_id)
-                .join(creditor_alias, Debt.creditor_id == creditor_alias.telegram_id)
-                .where(or_(Debt.creditor_id == tg_id, Debt.debtor_id == tg_id))
-            )
-            rows = (await session.execute(stmt)).all()
-            return [
-                DebtReadSchema(
-                    id=debt.id,
-                    amount=debt.amount,
-                    currency=debt.currency,
-                    description=debt.description,
-                    is_paid=debt.is_paid,
-                    debtor=UserSchema.model_validate(debtor),
-                    creditor=UserSchema.model_validate(creditor),
-                    debtor_id=debt.debtor_id,
-                    creditor_id=debt.creditor_id,
-                    created_at=str(debt.created_at),
-                ) for debt, debtor, creditor in rows
-            ]
-
-    async def connect(self, tg_id: int, ws: WebSocket):
-        await ws.accept()
-        # Теперь просто добавляем новый сокет в список этого пользователя
-        self.active_connections[tg_id].append(ws)
-        await self.broadcast_user_update(tg_id)
-
-    def disconnect(self, telegram_id: int, ws: WebSocket):
-        # Удаляем конкретный сокет из списка
-        if telegram_id in self.active_connections:
-            if ws in self.active_connections[telegram_id]:
-                self.active_connections[telegram_id].remove(ws)
-            # Если у пользователя больше нет активных соединений, удаляем ключ
-            if not self.active_connections[telegram_id]:
-                del self.active_connections[telegram_id]
-
-    async def broadcast_user_update(self, telegram_id: int):
-        # Если пользователя нет в словаре или список пуст — выходим
-        if telegram_id not in self.active_connections or not self.active_connections[telegram_id]:
-            return
-
-        data = await self.get_user_debts(telegram_id)
-        payload = [d.model_dump() for d in data]
-
-        # Перебираем все сокеты пользователя (для всех его устройств)
-        # Делаем срез [:], чтобы безопасно удалять элементы во время итерации
-        for ws in self.active_connections[telegram_id][:]:
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                # Если сокет закрыт или недоступен, удаляем его из списка
-                self.disconnect(telegram_id, ws)
-
-ws_manager = WebsocketManager()
-
-async def send_notification_to_users(telegram_id: int, message: str):
-    await bot.send_message(chat_id=telegram_id, text=message)
-
-async def get_user_by_telegram_id(telegram_id: int) -> UserSchema:
-    async with async_session() as session:
-        stmt = select(User).where(User.telegram_id == telegram_id)
-        result = (await session.execute(stmt)).scalar_one_or_none()
-        if result:
-            return UserSchema.model_validate(result)
-        raise HTTPException(status_code=404, detail="User not found")
 
 # --- Роутеры ---
 
