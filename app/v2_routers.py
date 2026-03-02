@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import httpx
 import jinja2
-from fastapi import APIRouter, HTTPException, Body, Path
+from fastapi import APIRouter, HTTPException, Body, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, update, or_
 from sqlalchemy.orm import aliased
@@ -34,12 +34,19 @@ load_dotenv()
 router = APIRouter(tags=["v2_routers"], prefix="/v2")
 
 @router.patch('/debt/update/{debt_id}', response_model=DebtReadSchema)
-async def update_debt(updated_schema: DebtUpdateSchema, debt_id: int = Path(...)):
+async def update_debt(
+        updated_schema: DebtUpdateSchema,
+        debt_id: int = Path(...),
+        current_user_id: int = Query(...),
+):
+    current_debt = await get_debt_full_info(debt_id)
     async with async_session() as session:
         updated_debt_data = updated_schema.model_dump(
             exclude_unset=True,
             exclude_none=True
         )
+        if current_debt.debtor_id == current_user_id:
+            pass
 
         if not updated_debt_data:
             raise HTTPException(status_code=400, detail="No data to update")

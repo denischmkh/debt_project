@@ -14,6 +14,11 @@ class UserSchema(BaseModel):
     name: str
     telegram_id: int
 
+class DebtStatusEnum(str, Enum):
+    active = "Active"
+    waiting_confirmation = "Waiting Confirmation"
+    closed = "Closed"
+
 class UserUpdateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
@@ -26,6 +31,7 @@ class DebtUpdateSchema(BaseModel):
     currency: str | None = None
     description: str | None = None
     is_paid: bool | None = False
+    status: str | None = None
 
 class DebtCreateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
