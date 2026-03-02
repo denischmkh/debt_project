@@ -47,6 +47,34 @@ app.include_router(router=v2_routers)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
+from sqladmin import Admin, ModelView
+
+admin = Admin(app, engine)
+
+class UserAdmin(ModelView, model=User):
+    column_list = [User.telegram_id, User.name]
+    column_searchable_list = [User.name]
+    name = "Пользователь"
+    name_plural = "Пользователи"
+    icon = "fa-solid fa-user"
+
+class DebtAdmin(ModelView, model=Debt):
+    column_list = [
+        Debt.id,
+        Debt.creditor_id,
+        Debt.debtor_id,
+        Debt.amount,
+        Debt.currency,
+        Debt.is_paid
+    ]
+    column_filters = [Debt.is_paid, Debt.currency]
+    name = "Долг"
+    name_plural = "Долги"
+    icon = "fa-solid fa-money-bill"
+
+# Регистрируем
+admin.add_view(UserAdmin)
+admin.add_view(DebtAdmin)
 
 # --- Роутеры ---
 
