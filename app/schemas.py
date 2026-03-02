@@ -43,7 +43,7 @@ class DebtReadSchema(DebtCreateSchema):
     id: int
     creditor: UserSchema
     debtor: UserSchema
-    created_at: str
+    created_at: datetime
 
 class DebtClosingConfirmationSmallSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
