@@ -5,7 +5,7 @@ import httpx
 import jinja2
 from fastapi import FastAPI, HTTPException, Body, Path
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, update, or_
+from sqlalchemy import select, update, or_, delete
 from sqlalchemy.orm import aliased
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
@@ -22,8 +22,9 @@ from redis import asyncio as aioredis
 
 from aiogram import Bot
 
-from app.database import Base, engine, async_session, User, Debt
-from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema
+from app.database import Base, engine, async_session, User, Debt, DebtClosingConfirmation
+from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema, \
+    DebtClosingConfirmationSchema
 from app.utils import send_notification_to_users, get_user_by_telegram_id, get_debt_full_info
 from app.v2_routers import router as v2_routers
 from dotenv import load_dotenv
@@ -167,6 +168,39 @@ async def update_debt(updated_schema: DebtUpdateSchema, debt_id: int = Path(...)
 
     return updated_debt
 
+@app.get('/confirmations/{telegram_id}', response_model=list[DebtClosingConfirmationSchema])
+async def get_debt_confirmations(
+        telegram_id: int = Path(...),
+):
+    debtor_alias = aliased(User)
+    creditor_alias = aliased(User)
+    async with async_session() as session:
+        stmt = (select(DebtClosingConfirmation, Debt, debtor_alias, creditor_alias)
+                .join(Debt, DebtClosingConfirmation.debt_id == Debt.id)
+                .join(debtor_alias, Debt.debtor_id == debtor_alias.telegram_id)
+                .join(creditor_alias, Debt.creditor_id == creditor_alias.telegram_id)
+                .where(Debt.creditor_id == telegram_id))
+        result = (await session.execute(stmt)).all()
+        debt_closing_confirmations = []
+        for row in result:
+            debt_closing_confirmation, debt, debtor, creditor = row
+            debt_closing_confirmations.append(DebtClosingConfirmationSchema(
+                **debt_closing_confirmation.__dict__,
+                debt=DebtReadSchema(
+                    **debt.__dict__,
+                    creditor=UserSchema.model_validate(creditor),
+                    debtor=UserSchema.model_validate(debtor),
+                    )
+                )
+            )
+    return debt_closing_confirmations
+
+@app.delete('/confirmations/{confirmation_id}')
+async def delete_debt_confirmation(confirmation_id: int):
+    async with async_session() as session:
+        stmt = (delete(DebtClosingConfirmation).where(DebtClosingConfirmation.id == confirmation_id))
+        await session.execute(stmt)
+        await session.commit()
 
 @app.websocket('/ws/{telegram_id}')
 async def websocket_endpoint(websocket: WebSocket, telegram_id: int):

@@ -11,7 +11,7 @@
             --bg-color: #17212b; --card-bg: #232e3c; --header-bg: #0e1621;
             --text-color: #ffffff; --text-secondary: #8b9198; --accent-color: #5288c1;
             --danger-color: #e4a83b; --success-color: #4fae4e; --border-color: #0e1621;
-            --input-bg: #242f3d;
+            --input-bg: #242f3d; --notification-bg: #ff4d4d;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -24,8 +24,23 @@
             padding: 16px; z-index: 100; border-bottom: 1px solid var(--border-color);
         }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .user-info { font-size: 14px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s; }
+        .user-info { font-size: 14px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s; flex: 1; }
         .user-info:hover { color: var(--accent-color); }
+
+        /* Notification Icon */
+        .notification-icon {
+            position: relative; width: 24px; height: 24px; margin-right: 16px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .notification-icon svg { width: 24px; height: 24px; fill: none; stroke: var(--text-secondary); stroke-width: 2; }
+        .notification-icon.active svg { stroke: var(--accent-color); }
+        .badge {
+            position: absolute; top: -4px; right: -4px; background-color: var(--notification-bg);
+            color: white; border-radius: 50%; width: 18px; height: 18px;
+            font-size: 11px; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; border: 2px solid var(--header-bg);
+        }
+
         .header-stats {
             display: flex; flex-direction: column; align-items: stretch;
             background-color: var(--card-bg); padding: 12px 16px; border-radius: 12px;
@@ -119,12 +134,21 @@
         .btn-action:active { opacity: 0.8; }
         .btn-primary { background-color: var(--accent-color); color: white; }
         .btn-secondary { background-color: rgba(255,255,255,0.1); color: var(--text-color); }
+        .btn-danger { background-color: var(--notification-bg); color: white; }
         .back-btn {
             background: none; border: none; color: var(--accent-color); font-size: 16px;
             cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;
         }
         .hidden { display: none !important; }
         .empty-text { text-align: center; color: var(--text-secondary); margin-top: 40px; font-size: 15px; }
+
+        /* Confirmation Items */
+        .confirmation-item {
+            background-color: var(--bg-color); padding: 12px; border-radius: 10px;
+            margin-bottom: 10px; cursor: pointer; border-left: 4px solid var(--success-color);
+        }
+        .confirmation-item b { color: var(--text-color); font-size: 15px; }
+        .confirmation-item p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -133,6 +157,14 @@
     <header class="header">
         <div class="header-top">
             <div class="user-info" id="current-user-info" onclick="openNameModal()">Загрузка...</div>
+
+            <!-- Notification Icon -->
+            <div id="notification-icon" class="notification-icon hidden" onclick="openConfirmationsModal()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div id="notification-badge" class="badge">0</div>
+            </div>
 
             <button id="back-btn" class="back-btn hidden" onclick="goBack()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -167,7 +199,7 @@
 
     <button class="fab" onclick="openCreateModal()">+</button>
 
-    <!-- Modal: Registration (NEW) -->
+    <!-- Modal: Registration -->
     <div id="register-modal" class="modal-overlay">
         <div class="modal-sheet">
             <h2 class="modal-title">Регистрация</h2>
@@ -175,6 +207,15 @@
             <label>Ваше имя</label>
             <input type="text" id="register-name-input" placeholder="Как вас зовут?">
             <button class="btn-action btn-primary" onclick="submitRegistration()">Сохранить</button>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmations List -->
+    <div id="confirmations-modal" class="modal-overlay">
+        <div class="modal-sheet">
+            <h2 class="modal-title">Запросы на закрытие</h2>
+            <div id="confirmations-list"></div>
+            <button class="btn-action btn-secondary" onclick="closeConfirmationsModal()">Закрыть</button>
         </div>
     </div>
 
@@ -215,6 +256,9 @@
         <div class="modal-sheet">
             <h2 class="modal-title">Редактировать</h2>
             <input type="hidden" id="edit-debt-id">
+            <!-- Hidden confirmation ID for rejection logic -->
+            <input type="hidden" id="edit-confirmation-id">
+
             <label>Сумма</label>
             <input type="number" id="edit-amount" step="0.01">
             <label>Валюта</label>
@@ -225,8 +269,16 @@
             </select>
             <label>Описание</label>
             <textarea id="edit-desc" rows="2"></textarea>
+
+            <div id="edit-info" style="margin-bottom: 16px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 13px; color: var(--text-secondary); display:none;">
+                Должник запросил закрытие этого долга.
+            </div>
+
             <button class="btn-action btn-primary" onclick="saveDebtChanges()">Сохранить</button>
-            <button class="btn-action btn-success" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Закрыть долг</button>
+            <!-- Buttons for Confirmation flow -->
+            <button id="btn-confirm-close" class="btn-action btn-success hidden" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Подтвердить закрытие</button>
+            <button id="btn-reject-close" class="btn-action btn-danger hidden" onclick="rejectConfirmation()">Отклонить запрос</button>
+
             <button class="btn-action btn-secondary" onclick="closeEditModal()">Отмена</button>
         </div>
     </div>
@@ -237,6 +289,7 @@
         let ws = null;
         let usersCache = [];
         let allDebts = [];
+        let pendingConfirmations = [];
         let activeTab = 'owe';
         let currentView = 'main';
         let selectedUserId = null;
@@ -245,7 +298,6 @@
 
         // --- Init ---
         window.onload = async () => {
-            // Init Telegram WebApp
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.ready();
                 window.Telegram.WebApp.expand();
@@ -256,12 +308,9 @@
             }
 
             await fetchCurrencyRates();
-
-            // Если tgId определен (запуск в Telegram) - проверяем юзера
             if (tgId) {
                 await checkUser();
             } else {
-                // Если запускаем локально без Telegram, показываем окно регистрации (для теста)
                 showRegisterModal();
             }
         };
@@ -280,7 +329,7 @@
             return currencyRates[fromCurr] / currencyRates[toCurr];
         }
 
-        // --- Auth Logic ---
+        // --- Auth & Init ---
         async function checkUser() {
             try {
                 const resp = await fetch(`/user/exist?user_id=${tgId}`);
@@ -288,26 +337,17 @@
                     const user = await resp.json();
                     initApp(user);
                 } else {
-                    // Если 404 - показываем модальное окно регистрации
                     showRegisterModal();
                 }
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        function showRegisterModal() {
-            document.getElementById('register-modal').classList.add('active');
-        }
+        function showRegisterModal() { document.getElementById('register-modal').classList.add('active'); }
 
         async function submitRegistration() {
             const nameInput = document.getElementById('register-name-input');
             const name = nameInput.value.trim();
-
-            if (!name) {
-                nameInput.style.border = "1px solid red";
-                return;
-            }
+            if (!name) { nameInput.style.border = "1px solid red"; return; }
 
             try {
                 const resp = await fetch('/user/create', {
@@ -315,27 +355,18 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ telegram_id: Number(tgId), name })
                 });
-
                 if (resp.ok) {
                     const user = await resp.json();
                     document.getElementById('register-modal').classList.remove('active');
                     initApp(user);
-                } else {
-                    // Используем alert только для критических ошибок, лучше заменить на WebApp.showAlert если доступно
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        window.Telegram.WebApp.showAlert("Ошибка регистрации");
-                    } else {
-                        alert("Ошибка регистрации");
-                    }
-                }
-            } catch(e) {
-                console.error(e);
-            }
+                } else { showTGAlert("Ошибка регистрации"); }
+            } catch(e) { console.error(e); }
         }
 
         async function initApp(user) {
             document.getElementById('current-user-info').innerText = user.name;
             await loadUsers();
+            await loadConfirmations(); // Load confirmations
             connectWS();
         }
 
@@ -347,15 +378,60 @@
             }
         }
 
-        function populateUserSelect() {
-            const sel = document.getElementById('create-user-select');
-            sel.innerHTML = '';
-            usersCache.filter(u => u.telegram_id != tgId).forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.telegram_id;
-                opt.innerText = u.name;
-                sel.appendChild(opt);
-            });
+        // --- Confirmations Logic ---
+        async function loadConfirmations() {
+            try {
+                const resp = await fetch(`/confirmations/${tgId}`);
+                if (resp.ok) {
+                    pendingConfirmations = await resp.json();
+                    updateConfirmationBadge();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function updateConfirmationBadge() {
+            const icon = document.getElementById('notification-icon');
+            const badge = document.getElementById('notification-badge');
+            if (pendingConfirmations.length > 0) {
+                icon.classList.remove('hidden');
+                icon.classList.add('active');
+                badge.innerText = pendingConfirmations.length;
+            } else {
+                icon.classList.add('hidden');
+                icon.classList.remove('active');
+            }
+        }
+
+        function openConfirmationsModal() {
+            const list = document.getElementById('confirmations-list');
+            list.innerHTML = '';
+
+            if (pendingConfirmations.length === 0) {
+                list.innerHTML = '<div class="empty-text">Нет ожидающих запросов</div>';
+            } else {
+                pendingConfirmations.forEach(conf => {
+                    const item = document.createElement('div');
+                    item.className = 'confirmation-item';
+                    // debt object is nested in the response
+                    const debt = conf.debt;
+                    const debtor = debt.debtor;
+
+                    item.innerHTML = `
+                        <b>${debtor.name} хочет закрыть долг</b>
+                        <p>Сумма: ${debt.amount} ${debt.currency}<br>${debt.description || ''}</p>
+                    `;
+                    item.onclick = () => {
+                        closeConfirmationsModal();
+                        openEditModal(debt.id, conf.id); // Pass debt_id and confirmation_id
+                    };
+                    list.appendChild(item);
+                });
+            }
+            document.getElementById('confirmations-modal').classList.add('active');
+        }
+
+        function closeConfirmationsModal() {
+            document.getElementById('confirmations-modal').classList.remove('active');
         }
 
         // --- WebSockets ---
@@ -363,12 +439,15 @@
             const proto = location.protocol === 'https:' ? 'wss' : 'ws';
             ws = new WebSocket(`${proto}://${location.host}/ws/${tgId}`);
             ws.onmessage = (e) => {
+                // If we get a WS update, it might be a new confirmation, so refresh list
+                // Ideally server sends specific event, but here we just poll on change
+                loadConfirmations();
                 allDebts = JSON.parse(e.data);
                 renderCurrentView();
             };
         }
 
-        // --- Logic: Totals & Conversion ---
+        // --- Logic: Totals & Rendering ---
         function calculateTotals(debts) {
             const totals = {};
             debts.forEach(d => { totals[d.currency] = (totals[d.currency] || 0) + d.amount; });
@@ -378,7 +457,6 @@
         function renderTotalsHtml(debts) {
             const rawTotals = calculateTotals(debts);
             const targetCurr = selectedCurrency;
-
             if (targetCurr === 'all') {
                 if (Object.keys(rawTotals).length === 0) return '<div class="total-display">0.00</div>';
                 let html = '';
@@ -387,35 +465,18 @@
                 });
                 return html;
             }
-
-            let totalSum = 0;
-            let conversionFailed = false;
-
+            let totalSum = 0; let conversionFailed = false;
             Object.entries(rawTotals).forEach(([curr, sum]) => {
-                if (curr === targetCurr) {
-                    totalSum += sum;
-                } else {
-                    const rate = getRate(curr, targetCurr);
-                    if (rate) totalSum += sum * rate;
-                    else conversionFailed = true;
-                }
+                if (curr === targetCurr) totalSum += sum;
+                else { const rate = getRate(curr, targetCurr); if (rate) totalSum += sum * rate; else conversionFailed = true; }
             });
-
             if (conversionFailed) return `<div class="total-display">${totalSum.toFixed(2)} ${targetCurr} <span style="font-size:12px; color:var(--text-secondary); display:block;">(нет курса)</span></div>`;
             return `<div class="total-display">${totalSum.toFixed(2)} ${targetCurr}</div>`;
         }
 
-        function handleCurrencyChange() {
-            selectedCurrency = document.getElementById('currency-selector').value;
-            renderCurrentView();
-        }
+        function handleCurrencyChange() { selectedCurrency = document.getElementById('currency-selector').value; renderCurrentView(); }
+        function renderCurrentView() { if (currentView === 'main') renderMainList(); else renderUserDetail(selectedUserId); }
 
-        function renderCurrentView() {
-            if (currentView === 'main') renderMainList();
-            else renderUserDetail(selectedUserId);
-        }
-
-        // --- View: Main ---
         function renderMainList() {
             currentView = 'main';
             document.getElementById('main-tabs').classList.remove('hidden');
@@ -432,7 +493,6 @@
 
             const container = document.getElementById('list-container');
             const emptyState = document.getElementById('empty-state');
-
             container.innerHTML = '';
             if (filtered.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -446,7 +506,6 @@
         function createCard(debt, isMainView) {
             const div = document.createElement('div');
             let modeClass = '', label = '', otherUser = null;
-
             if (isMainView) {
                 if (activeTab === 'owe') { modeClass = 'mode-owe'; otherUser = debt.creditor; label = 'Кредитор'; }
                 else { modeClass = 'mode-owed'; otherUser = debt.debtor; label = 'Должник'; }
@@ -455,19 +514,15 @@
                 else { modeClass = 'mode-owed'; label = 'Мне должны'; }
                 otherUser = debt.creditor.telegram_id == tgId ? debt.debtor : debt.creditor;
             }
-
             const dateStr = new Date(debt.created_at).toLocaleDateString('ru-RU');
             div.className = `debt-card ${modeClass}`;
             div.onclick = () => openEditModal(debt.id);
-
             div.innerHTML = `
                 <div class="card-row">
                     <div class="amount-block">${debt.amount} <span class="currency-badge">${debt.currency}</span></div>
                     <div class="date-text">${dateStr}</div>
                 </div>
-                <div>
-                    <div class="counterparty-name">${label}: <b class="clickable-name" onclick="event.stopPropagation(); openUserDetail(${otherUser.telegram_id})">${otherUser.name}</b></div>
-                </div>
+                <div><div class="counterparty-name">${label}: <b class="clickable-name" onclick="event.stopPropagation(); openUserDetail(${otherUser.telegram_id})">${otherUser.name}</b></div></div>
                 <div class="description-text">${debt.description || 'Без описания'}</div>`;
             return div;
         }
@@ -478,81 +533,51 @@
             renderMainList();
         }
 
-        // --- View: User Detail ---
-        function openUserDetail(userId) {
-            selectedUserId = userId;
-            currentView = 'detail';
-            renderUserDetail(userId);
-        }
+        function openUserDetail(userId) { selectedUserId = userId; currentView = 'detail'; renderUserDetail(userId); }
 
         function renderUserDetail(userId) {
             document.getElementById('main-tabs').classList.add('hidden');
             document.getElementById('back-btn').classList.remove('hidden');
             document.getElementById('current-user-info').classList.add('hidden');
-
             const user = usersCache.find(u => u.telegram_id == userId);
             document.getElementById('header-title').innerText = user ? user.name : 'Детали';
-
             const userDebts = allDebts.filter(d => !d.is_paid && ((d.debtor_id == tgId && d.creditor_id == userId) || (d.creditor_id == tgId && d.debtor_id == userId)));
             const iOwe = userDebts.filter(d => d.debtor_id == tgId);
             const theyOwe = userDebts.filter(d => d.creditor_id == tgId);
-
             const statsContainer = document.getElementById('total-display');
             let statsHtml = '';
             if (iOwe.length > 0) statsHtml += `<div class="total-label">Я должен:</div>` + renderTotalsHtml(iOwe);
             if (theyOwe.length > 0) statsHtml += `<div class="total-label" style="margin-top: 12px;">Мне должны:</div>` + renderTotalsHtml(theyOwe);
             if (iOwe.length === 0 && theyOwe.length === 0) statsHtml = '<div class="total-display">Нет долгов</div>';
             statsContainer.innerHTML = statsHtml;
-
             const container = document.getElementById('list-container');
             const emptyState = document.getElementById('empty-state');
             container.innerHTML = '';
             userDebts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-            if (userDebts.length === 0) {
-                emptyState.classList.remove('hidden');
-                emptyState.innerText = "Нет долгов с этим пользователем";
-            } else {
-                emptyState.classList.add('hidden');
-                userDebts.forEach(debt => container.appendChild(createCard(debt, false)));
-            }
+            if (userDebts.length === 0) { emptyState.classList.remove('hidden'); emptyState.innerText = "Нет долгов с этим пользователем"; }
+            else { emptyState.classList.add('hidden'); userDebts.forEach(debt => container.appendChild(createCard(debt, false))); }
         }
 
         function goBack() { renderMainList(); }
 
-        // --- Name Change Logic ---
-        function openNameModal() {
-            document.getElementById('new-name-input').value = document.getElementById('current-user-info').innerText;
-            document.getElementById('name-modal').classList.add('active');
-        }
+        // --- Modals Logic ---
+        function openNameModal() { document.getElementById('new-name-input').value = document.getElementById('current-user-info').innerText; document.getElementById('name-modal').classList.add('active'); }
         function closeNameModal() { document.getElementById('name-modal').classList.remove('active'); }
 
         async function saveNewName() {
             const newName = document.getElementById('new-name-input').value.trim();
             if (!newName) return;
             try {
-                const resp = await fetch(`/user/update/${tgId}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name: newName })
-                });
-                if (resp.ok) {
-                    const user = await resp.json();
-                    document.getElementById('current-user-info').innerText = user.name;
-                    closeNameModal();
-                    await loadUsers();
-                } else console.error("Update error");
+                const resp = await fetch(`/user/update/${tgId}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name: newName }) });
+                if (resp.ok) { const user = await resp.json(); document.getElementById('current-user-info').innerText = user.name; closeNameModal(); await loadUsers(); }
+                else console.error("Update error");
             } catch (e) { console.error(e); }
         }
 
-        // --- Create Logic ---
         function openCreateModal() {
             const title = document.getElementById('create-modal-title');
             if (currentView === 'detail' && selectedUserId) document.getElementById('create-user-select').value = selectedUserId;
-
-            if (activeTab === 'owe') title.innerText = "Новый долг (Я должен)";
-            else title.innerText = "Новый долг (Мне должны)";
-
+            if (activeTab === 'owe') title.innerText = "Новый долг (Я должен)"; else title.innerText = "Новый долг (Мне должны)";
             document.getElementById('create-modal').classList.add('active');
             document.getElementById('create-amount').value = '';
             document.getElementById('create-desc').value = '';
@@ -564,36 +589,55 @@
             const amount = parseFloat(document.getElementById('create-amount').value);
             const currency = document.getElementById('create-currency').value;
             const desc = document.getElementById('create-desc').value;
-
             if (!amount || amount <= 0) return;
-
             let debtorId, creditorId;
             if (activeTab === 'owe') { debtorId = Number(tgId); creditorId = Number(otherUserId); }
             else { debtorId = Number(otherUserId); creditorId = Number(tgId); }
-
             try {
-                const resp = await fetch('/debt/create', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ debtor_id: debtorId, creditor_id: creditorId, amount, currency, description: desc })
-                });
-                if (resp.ok) closeCreateModal();
-                else { const err = await resp.json(); console.error(err.detail); }
+                const resp = await fetch('/debt/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ debtor_id: debtorId, creditor_id: creditorId, amount, currency, description: desc }) });
+                if (resp.ok) closeCreateModal(); else { const err = await resp.json(); console.error(err.detail); }
             } catch(e) { console.error(e); }
         }
 
         // --- Edit Logic ---
-        function openEditModal(id) {
-            const debt = allDebts.find(d => d.id === id);
+        function openEditModal(debt_id, confirmation_id = null) {
+            const debt = allDebts.find(d => d.id === debt_id);
             if (!debt) return;
-            document.getElementById('edit-debt-id').value = id;
+
+            document.getElementById('edit-debt-id').value = debt_id;
+            document.getElementById('edit-confirmation-id').value = confirmation_id || '';
             document.getElementById('edit-amount').value = debt.amount;
             document.getElementById('edit-currency').value = debt.currency;
             document.getElementById('edit-desc').value = debt.description || '';
+
+            const btnConfirm = document.getElementById('btn-confirm-close');
+            const btnReject = document.getElementById('btn-reject-close');
+            const info = document.getElementById('edit-info');
+            const btnDefaultClose = document.getElementById('btn-default-close'); // If exists, or just hide/show logic
+
+            // Reset visibility
+            btnConfirm.classList.add('hidden');
+            btnReject.classList.add('hidden');
+            info.style.display = 'none';
+
+            // If passed confirmation_id, we are viewing it as Creditor
+            if (confirmation_id) {
+                info.style.display = 'block';
+                btnConfirm.classList.remove('hidden'); // Creditor can confirm
+                btnReject.classList.remove('hidden');  // Creditor can reject
+                // Hide normal save if we only want to confirm/reject? No, let them edit too.
+            } else {
+                // Standard view
+                // If I am the debtor, I can try to close it (will trigger request)
+                // If I am the creditor, I can close it directly.
+            }
+
             document.getElementById('edit-modal').classList.add('active');
         }
+
         function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); }
 
+        // --- UPDATED: Save & Close Logic ---
         async function saveDebtChanges() {
             const id = document.getElementById('edit-debt-id').value;
             const payload = {
@@ -601,33 +645,90 @@
                 currency: document.getElementById('edit-currency').value,
                 description: document.getElementById('edit-desc').value
             };
-            const resp = await fetch(`/debt/update/${id}`, {
-                method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-            });
-            if (resp.ok) closeEditModal(); else console.error("Error");
+            // Standard save using V2 router (just in case)
+            await performDebtUpdate(id, payload);
         }
 
         async function markAsPaid() {
             const id = document.getElementById('edit-debt-id').value;
-            // Используем Telegram Confirm для удобства
-            if (window.Telegram && window.Telegram.WebApp) {
-                 window.Telegram.WebApp.showConfirm("Закрыть долг?", async (confirmed) => {
-                    if (confirmed) {
-                        const resp = await fetch(`/debt/update/${id}`, {
-                            method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true })
-                        });
-                        if (resp.ok) closeEditModal(); else console.error("Error");
-                    }
+            const payload = { is_paid: true };
+
+            showTGConfirm("Подтвердить закрытие долга?", async () => {
+                await performDebtUpdate(id, payload);
+            });
+        }
+
+        async function performDebtUpdate(id, payload) {
+            // Use the new V2 endpoint
+            const url = `/v2/debt/update/${id}?current_user_id=${tgId}`;
+
+            try {
+                const resp = await fetch(url, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
                 });
-            } else {
-                // Fallback
-                if(confirm("Закрыть долг?")) {
-                    const resp = await fetch(`/debt/update/${id}`, {
-                        method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true })
-                    });
-                    if (resp.ok) closeEditModal(); else console.error("Error");
+
+                if (resp.ok) {
+                    closeEditModal();
+                    // Reload confirmations if any were resolved
+                    loadConfirmations();
+                } else {
+                    const err = await resp.json();
+                    // Handle 400 "Need confirmation" gracefully
+                    if (resp.status === 400 && err.detail && err.detail.includes("подтверждения")) {
+                        showTGAlert(err.detail); // Show server message
+                        closeEditModal();
+                    } else {
+                        showTGAlert(err.detail || "Ошибка");
+                    }
                 }
+            } catch(e) {
+                showTGAlert("Ошибка сети");
+                console.error(e);
             }
+        }
+
+        async function rejectConfirmation() {
+            const confId = document.getElementById('edit-confirmation-id').value;
+            if (!confId) return;
+
+            showTGConfirm("Отклонить запрос на закрытие?", async () => {
+                try {
+                    // Assuming endpoint: DELETE /confirmations/{id}
+                    const resp = await fetch(`/confirmations/${confId}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        closeEditModal();
+                        loadConfirmations();
+                        showTGAlert("Запрос отклонен");
+                    } else {
+                        showTGAlert("Ошибка удаления запроса");
+                    }
+                } catch (e) {
+                    showTGAlert("Ошибка сети");
+                }
+            });
+        }
+
+        function showTGAlert(msg) {
+            if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.showAlert(msg);
+            else alert(msg);
+        }
+
+        function showTGConfirm(msg, callback) {
+            if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.showConfirm(msg, callback);
+            else if (confirm(msg)) callback(true);
+        }
+
+        function populateUserSelect() {
+            const sel = document.getElementById('create-user-select');
+            sel.innerHTML = '';
+            usersCache.filter(u => u.telegram_id != tgId).forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.telegram_id;
+                opt.innerText = u.name;
+                sel.appendChild(opt);
+            });
         }
     </script>
 </body>

@@ -14,11 +14,6 @@ class UserSchema(BaseModel):
     name: str
     telegram_id: int
 
-class DebtStatusEnum(str, Enum):
-    active = "Active"
-    waiting_confirmation = "Waiting Confirmation"
-    closed = "Closed"
-
 class UserUpdateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
@@ -49,3 +44,9 @@ class DebtReadSchema(DebtCreateSchema):
     creditor: UserSchema
     debtor: UserSchema
     created_at: str
+
+class DebtClosingConfirmationSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    message: str
+    debt_id: int
+    debt: DebtReadSchema

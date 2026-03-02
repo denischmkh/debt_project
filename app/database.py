@@ -29,3 +29,10 @@ class Debt(Base):
     description: Mapped[str] = mapped_column(nullable=True)
     is_paid: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+class DebtClosingConfirmation(Base):
+    __tablename__ = "debt_closing_confirmations"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    message: Mapped[str] = mapped_column(nullable=False)
+    debt_id: Mapped[int] = mapped_column(ForeignKey("debts.id", ondelete="CASCADE"), unique=True, index=True)

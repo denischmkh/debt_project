@@ -5,7 +5,8 @@ import httpx
 import jinja2
 from fastapi import APIRouter, HTTPException, Body, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, update, or_
+from six import assertCountEqual
+from sqlalchemy import select, update, or_, delete
 from sqlalchemy.orm import aliased
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
@@ -22,11 +23,11 @@ from redis import asyncio as aioredis
 
 from aiogram import Bot
 
-from app.database import Base, engine, async_session, User, Debt
+from app.database import Base, engine, async_session, User, Debt, DebtClosingConfirmation
 from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema
 from dotenv import load_dotenv
 
-from app.utils import get_debt_full_info, send_notification_to_users
+from app.utils import get_debt_full_info, send_notification_to_users, get_debt_confirmation, get_user_by_telegram_id
 from app.ws import ws_manager
 
 load_dotenv()
@@ -45,11 +46,28 @@ async def update_debt(
             exclude_unset=True,
             exclude_none=True
         )
-        if current_debt.debtor_id == current_user_id:
-            pass
+        if updated_debt_data.is_paid and current_debt.debtor_id == current_user_id:
+            debt_confirmation = await get_debt_confirmation(debt_id=debt_id)
+            if not debt_confirmation:
+                current_user = await get_user_by_telegram_id(telegram_id=current_user_id)
+                new_debt_confirmation = DebtClosingConfirmation(
+                    debt_id=debt_id,
+                    message=f"Должник {current_user} хочет закрыть сумму на {current_debt.amount} {current_debt.currency}",
+                )
+                await session.add(new_debt_confirmation)
+                await session.commit()
+                await send_notification_to_users(telegram_id=current_debt.creditor_id, message=new_debt_confirmation.message)
+                raise HTTPException(status_code=400, detail=f'Нужно подтверждение кредитора {current_debt.creditor.name}')
+            else:
+                raise HTTPException(status_code=400, detail=f'Ожидайте подтверждение кредитора {current_debt.creditor.name}')
 
         if not updated_debt_data:
             raise HTTPException(status_code=400, detail="No data to update")
+
+        if updated_debt_data.get("is_paid"):
+            delete_confirmation_stmt = delete(DebtClosingConfirmation).where(DebtClosingConfirmation.debt_id == debt_id)
+            await session.execute(delete_confirmation_stmt)
+            await session.commit()
 
         stmt = update(Debt).where(Debt.id == debt_id).values(**updated_debt_data)
         result = await session.execute(stmt)
