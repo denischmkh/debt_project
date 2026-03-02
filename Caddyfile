@@ -1,19 +1,21 @@
 denys-personal-source.space, www.denys-personal-source.space {
-    root * /usr/share/caddy
-    file_server
+    # Обрабатываем статику только если файл реально существует в root
+    handle_path /static/* {
+        root * /usr/share/caddy
+        file_server
+    }
 
-    # Доступ к Swagger
+    # Проксируем админку со всеми вложенными путями
+    reverse_proxy /admin* backend:8000
+
+    # Все остальные API пути
+    reverse_proxy /v2/* backend:8000
     reverse_proxy /docs backend:8000
     reverse_proxy /openapi.json backend:8000
-
-    # Стандартные пути
     reverse_proxy /user/* backend:8000
     reverse_proxy /debt/* backend:8000
     reverse_proxy /users backend:8000
     reverse_proxy /ws/* backend:8000
     reverse_proxy /currency backend:8000
-    reverse_proxy /admin backend:8000
-
-    reverse_proxy /v2/* backend:8000
     reverse_proxy /confirmations/* backend:8000
 }
