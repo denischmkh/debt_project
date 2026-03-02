@@ -256,7 +256,6 @@
         <div class="modal-sheet">
             <h2 class="modal-title">Редактировать</h2>
             <input type="hidden" id="edit-debt-id">
-            <!-- Hidden confirmation ID for rejection logic -->
             <input type="hidden" id="edit-confirmation-id">
 
             <label>Сумма</label>
@@ -274,8 +273,11 @@
                 Должник запросил закрытие этого долга.
             </div>
 
-            <button class="btn-action btn-primary" onclick="saveDebtChanges()">Сохранить</button>
-            <!-- Buttons for Confirmation flow -->
+            <!-- Standard Buttons (Visible by default) -->
+            <button id="btn-save" class="btn-action btn-primary" onclick="saveDebtChanges()">Сохранить</button>
+            <button id="btn-close-debt" class="btn-action btn-success" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Закрыть долг</button>
+
+            <!-- Confirmation Flow Buttons (Hidden by default) -->
             <button id="btn-confirm-close" class="btn-action btn-success hidden" style="background-color: var(--success-color); color: #fff;" onclick="markAsPaid()">Подтвердить закрытие</button>
             <button id="btn-reject-close" class="btn-action btn-danger hidden" onclick="rejectConfirmation()">Отклонить запрос</button>
 
@@ -366,7 +368,7 @@
         async function initApp(user) {
             document.getElementById('current-user-info').innerText = user.name;
             await loadUsers();
-            await loadConfirmations(); // Load confirmations
+            await loadConfirmations();
             connectWS();
         }
 
@@ -412,7 +414,6 @@
                 pendingConfirmations.forEach(conf => {
                     const item = document.createElement('div');
                     item.className = 'confirmation-item';
-                    // debt object is nested in the response
                     const debt = conf.debt;
                     const debtor = debt.debtor;
 
@@ -422,7 +423,7 @@
                     `;
                     item.onclick = () => {
                         closeConfirmationsModal();
-                        openEditModal(debt.id, conf.id); // Pass debt_id and confirmation_id
+                        openEditModal(debt.id, conf.id);
                     };
                     list.appendChild(item);
                 });
@@ -439,8 +440,6 @@
             const proto = location.protocol === 'https:' ? 'wss' : 'ws';
             ws = new WebSocket(`${proto}://${location.host}/ws/${tgId}`);
             ws.onmessage = (e) => {
-                // If we get a WS update, it might be a new confirmation, so refresh list
-                // Ideally server sends specific event, but here we just poll on change
                 loadConfirmations();
                 allDebts = JSON.parse(e.data);
                 renderCurrentView();
@@ -610,26 +609,26 @@
             document.getElementById('edit-currency').value = debt.currency;
             document.getElementById('edit-desc').value = debt.description || '';
 
+            const btnSave = document.getElementById('btn-save');
+            const btnClose = document.getElementById('btn-close-debt');
             const btnConfirm = document.getElementById('btn-confirm-close');
             const btnReject = document.getElementById('btn-reject-close');
             const info = document.getElementById('edit-info');
-            const btnDefaultClose = document.getElementById('btn-default-close'); // If exists, or just hide/show logic
 
             // Reset visibility
+            btnSave.classList.remove('hidden');
+            btnClose.classList.remove('hidden');
             btnConfirm.classList.add('hidden');
             btnReject.classList.add('hidden');
             info.style.display = 'none';
 
-            // If passed confirmation_id, we are viewing it as Creditor
+            // If confirmation_id is present, we are viewing a request from creditor's side
             if (confirmation_id) {
                 info.style.display = 'block';
-                btnConfirm.classList.remove('hidden'); // Creditor can confirm
-                btnReject.classList.remove('hidden');  // Creditor can reject
-                // Hide normal save if we only want to confirm/reject? No, let them edit too.
-            } else {
-                // Standard view
-                // If I am the debtor, I can try to close it (will trigger request)
-                // If I am the creditor, I can close it directly.
+                btnSave.classList.add('hidden'); // Hide standard save
+                btnClose.classList.add('hidden'); // Hide standard close
+                btnConfirm.classList.remove('hidden'); // Show confirm
+                btnReject.classList.remove('hidden'); // Show reject
             }
 
             document.getElementById('edit-modal').classList.add('active');
@@ -637,7 +636,7 @@
 
         function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); }
 
-        // --- UPDATED: Save & Close Logic ---
+        // --- Save & Close Logic ---
         async function saveDebtChanges() {
             const id = document.getElementById('edit-debt-id').value;
             const payload = {
@@ -645,7 +644,6 @@
                 currency: document.getElementById('edit-currency').value,
                 description: document.getElementById('edit-desc').value
             };
-            // Standard save using V2 router (just in case)
             await performDebtUpdate(id, payload);
         }
 
@@ -653,7 +651,7 @@
             const id = document.getElementById('edit-debt-id').value;
             const payload = { is_paid: true };
 
-            showTGConfirm("Подтвердить закрытие долга?", async () => {
+            showTGConfirm("Подтвердить действие?", async () => {
                 await performDebtUpdate(id, payload);
             });
         }
@@ -671,13 +669,11 @@
 
                 if (resp.ok) {
                     closeEditModal();
-                    // Reload confirmations if any were resolved
                     loadConfirmations();
                 } else {
                     const err = await resp.json();
-                    // Handle 400 "Need confirmation" gracefully
                     if (resp.status === 400 && err.detail && err.detail.includes("подтверждения")) {
-                        showTGAlert(err.detail); // Show server message
+                        showTGAlert(err.detail);
                         closeEditModal();
                     } else {
                         showTGAlert(err.detail || "Ошибка");
@@ -695,7 +691,6 @@
 
             showTGConfirm("Отклонить запрос на закрытие?", async () => {
                 try {
-                    // Assuming endpoint: DELETE /confirmations/{id}
                     const resp = await fetch(`/confirmations/${confId}`, { method: 'DELETE' });
                     if (resp.ok) {
                         closeEditModal();
