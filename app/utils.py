@@ -75,6 +75,7 @@ async def get_debt_confirmation(debt_id: int) -> DebtClosingConfirmationSchema |
             **debt_closing_confirmation.__dict__,
             debt=DebtReadSchema(
                 **debt.__dict__,
+                created_at=str(debt.created_at),
                 creditor=UserSchema.model_validate(creditor),
                 debtor=UserSchema.model_validate(debtor),
             )
