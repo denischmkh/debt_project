@@ -118,7 +118,7 @@ async def create_debt(debt_data: DebtCreateSchema):
     await ws_manager.broadcast_user_update(debt_data.debtor_id)
     debtor: UserSchema = await get_user_by_telegram_id(debt_data.debtor_id)
     creditor: UserSchema = await get_user_by_telegram_id(debt_data.creditor_id)
-    await send_notification_to_users(debt_data.creditor_id, f"Новый должник {debtor} - сумма {debt_data.amount} {debt_data.currency}")
+    await send_notification_to_users(debt_data.creditor_id, f"Новый должник {debtor.name} - сумма {debt_data.amount} {debt_data.currency}")
     await send_notification_to_users(debt_data.debtor_id, f"У вас новый долг перед {creditor} - сумма {debt_data.amount} {debt_data.currency}")
     return await get_debt_full_info(new_debt.id)
 
