@@ -12,4 +12,7 @@ denys-personal-source.space, www.denys-personal-source.space {
     reverse_proxy /users backend:8000
     reverse_proxy /ws/* backend:8000
     reverse_proxy /currency backend:8000
+
+    reverse_proxy /v2/* backend:8000
+    reverse_proxy /confirmations/* backend:8000
 }
