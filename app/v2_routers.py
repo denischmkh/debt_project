@@ -1,32 +1,9 @@
-import os
-from collections import defaultdict
-
-import httpx
-import jinja2
-from fastapi import APIRouter, HTTPException, Body, Path, Query
-from fastapi.middleware.cors import CORSMiddleware
-from six import assertCountEqual
-from sqlalchemy import select, update, or_, delete
-from sqlalchemy.orm import aliased
-from starlette.requests import Request
-from starlette.responses import HTMLResponse
-from starlette.templating import Jinja2Templates
-from starlette.websockets import WebSocket, WebSocketDisconnect
-from contextlib import asynccontextmanager
-
-
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.decorator import cache
-
-from redis import asyncio as aioredis
-
-from aiogram import Bot
-
-from app.database import Base, engine, async_session, User, Debt, DebtClosingConfirmation
-from app.schemas import UserSchema, DebtCreateSchema, DebtReadSchema, DebtUpdateSchema, UserUpdateSchema
 from dotenv import load_dotenv
+from fastapi import APIRouter, HTTPException, Path, Query
+from sqlalchemy import update, delete
 
+from app.database import async_session, Debt, DebtClosingConfirmation
+from app.schemas import DebtReadSchema, DebtUpdateSchema
 from app.utils import get_debt_full_info, send_notification_to_users, get_debt_confirmation, get_user_by_telegram_id
 from app.ws import ws_manager
 
