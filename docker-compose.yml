@@ -28,28 +28,11 @@ services:
       - db
       - redis
     env_file: .env
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
 
-  caddy:
-    image: caddy:latest
-    container_name: debt_caddy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./templates:/usr/share/caddy:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - backend
-
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
